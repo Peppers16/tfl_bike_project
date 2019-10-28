@@ -11,6 +11,7 @@ import requests
 import os.path
 import csv
 import datetime
+import time
 
 credentials_file = 'apiCredentials.txt'
 
@@ -85,9 +86,24 @@ def extract_status_row(timestamp, line_status):
 
 def main():
     csv_file = 'data/statuslog.csv'
-    create_csv(csv_file, ['timestamp', 'modeName', 'lineId', 'lineName', 'statusSeverity', 'severityDesc'])
+    if not os.path.isfile(csv_file):
+        create_csv(csv_file, ['timestamp', 'modeName', 'lineId', 'lineName', 'statusSeverity', 'severityDesc'])
     request_time = datetime.datetime.now()
     status_json = request_tube_status()
     for line in status_json:
         row_items = extract_status_row(request_time, line)
         append_to_csv(csv_file, row_items)
+
+
+def simpleTimedLoop(min_incr = 15):
+    """Ultimate aim is to use a scheduler like Crontab, but for initial testing I will simply create a Python
+    loop which runs main() every x minutes.
+    Note: aim is to start at a time divisible by x. E.g. h:15, h:30 etc. so timer waits until the right time"""
+    print("Beginning simple timed loop!")
+    print("Request will be made every", min_incr, "minutes past the hour.")
+    epoch_mins = 60 * min_incr
+    while True:
+        time_to_next_call = epoch_mins - (time.time() % epoch_mins)
+        time.sleep(time_to_next_call)
+        main()
+        print('Requested: ' + time.ctime())
