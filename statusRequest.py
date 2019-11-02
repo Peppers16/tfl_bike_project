@@ -12,9 +12,10 @@ import os.path
 import csv
 import datetime
 import time
+import googleSheetsAccess
 
 credentials_file = 'apiCredentials.txt'
-
+google_spreadsheet_id = '1j2uY1NJwuTdeCQ2OoFzNDcfTXM7s3OkLvjKa6Wy9PlU'  # Here's one I made earlier
 
 def read_api_credentials(txt_file):
     """User is required to save a txt file with two lines: the first being their applicationID
@@ -84,7 +85,8 @@ def extract_status_row(timestamp, line_status):
             ]
 
 
-def main():
+def log_now_csv():
+    """This is superseded by log_now"""
     csv_file = 'data/statuslog.csv'
     if not os.path.isfile(csv_file):
         create_csv(csv_file, ['timestamp', 'modeName', 'lineId', 'lineName', 'statusSeverity', 'severityDesc'])
@@ -95,7 +97,20 @@ def main():
         append_to_csv(csv_file, row_items)
 
 
-def simpleTimedLoop(min_incr = 15):
+def request_and_format():
+    """Makes a status request to TFL
+    Extracts data from the JSON using extract_status_row()
+    Return a list of lists, indicating rows to add to the status log
+    """
+    request_time = datetime.datetime.now()
+    status_json = request_tube_status()
+    rows_out = []
+    for line in status_json:
+        rows_out.append(extract_status_row(request_time.__str__(), line))  # string method: can convert to JSON
+    return rows_out
+
+
+def simple_timed_loop(min_incr = 15):
     """Ultimate aim is to use a scheduler like Crontab, but for initial testing I will simply create a Python
     loop which runs main() every x minutes.
     Note: aim is to start at a time divisible by x. E.g. h:15, h:30 etc. so timer waits until the right time"""
@@ -105,5 +120,10 @@ def simpleTimedLoop(min_incr = 15):
     while True:
         time_to_next_call = epoch_mins - (time.time() % epoch_mins)
         time.sleep(time_to_next_call)
-        main()
+        data = request_and_format()
         print('Requested: ' + time.ctime())
+        googleSheetsAccess.log_to_google(data, google_spreadsheet_id)
+
+
+if __name__ == '__main__':
+    simple_timed_loop()

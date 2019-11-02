@@ -1,2 +1,4 @@
 apiCredentials.txt
 data/*
+googleCredentials.json
+token.pickle

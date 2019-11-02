@@ -32,5 +32,12 @@ def test_create_and_append_csv():
 
 def test_extract_status_row():
     statuses = request_tube_status()
-    statusrow = extract_status_row(datetime.datetime.now(), statuses[0])
+    statusrow = extract_status_row(datetime.datetime.now().__str__(), statuses[0])
+    print(statusrow)
     assert len(statusrow) > 1
+
+
+def test_request_and_format():
+    data = request_and_format()
+    assert len(data) > 0
+    assert data[0][1] in ['tube', 'overground', 'dlr']
