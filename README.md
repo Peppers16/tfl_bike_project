@@ -23,6 +23,8 @@ the code.
         ```
         (you'll need to install pip first if you don't have it)
     3. Run googleSheetsAccess.py as per [Google's instructions](https://developers.google.com/sheets/api/quickstart/python)
+        * Note: the first time you do this you have to authenticate with the Google Account, on the device you are using. 
+        This involves a webpage opening.
 #### Important: API Credentials:
 At this stage, you will need to save your TFL credentials to a text file in the directory.
 This is a temporary measure to avoid having to hard-code credentials, or request them each time. 

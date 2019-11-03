@@ -43,8 +43,12 @@ def request_meta_modes():
 def request_meta_severitycodes():
     """Request lookup for 'severity codes' """
     severity_codes_url = 'https://api.tfl.gov.uk/Line/Meta/Severity'
-    response = requests.get(severity_codes_url, params=credentials)
-    return response.json()
+    response = requests.get(severity_codes_url, params=credentials).json()
+    severity_codes_list = []
+    for code in response:
+        if code['modeName'] in ['tube', 'dlr', 'overground']:
+            severity_codes_list.append((code['modeName'], code['severityLevel'], code['description']))
+    return severity_codes_list
 
 
 def request_tube_status():
@@ -79,9 +83,12 @@ def append_to_csv(csvfile, row_items):
 
 def extract_status_row(timestamp, line_status):
     """Take a single linestatus from the status json and extracts data ready for a csv row"""
-    return [timestamp, line_status['modeName'], line_status['id'], line_status['name']
-            , '||'.join([str(status['statusSeverity']) for status in line_status['lineStatuses']])
-            , '||'.join([status['statusSeverityDescription'] for status in line_status['lineStatuses']])
+    return [timestamp
+            # , line_status['modeName']
+            , line_status['id']
+            # , line_status['name']
+            , ','.join([str(status['statusSeverity']) for status in line_status['lineStatuses']])
+            # , '||'.join([status['statusSeverityDescription'] for status in line_status['lineStatuses']])
             ]
 
 
