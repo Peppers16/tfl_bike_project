@@ -109,8 +109,8 @@ def request_and_format():
     Extracts data from the JSON using extract_status_row()
     Return a list of lists, indicating rows to add to the status log
     """
-    request_time = datetime.datetime.now()
     status_json = request_tube_status()
+    request_time = datetime.datetime.now()
     rows_out = []
     for line in status_json:
         rows_out.append(extract_status_row(request_time.__str__(), line))  # string method: can convert to JSON
@@ -132,5 +132,21 @@ def simple_timed_loop(min_incr = 15):
         googleSheetsAccess.log_to_google(data, google_spreadsheet_id)
 
 
+def singleRequest():
+    """ This fires a single request instead of a timed loop. This option is when using a scheduler like Cron """
+    data = request_and_format()
+    print('Requested: ' + time.ctime())
+
+    upload_attempts = 0
+    successful = False
+    while not successful and upload_attempts <= 3:
+        try:
+            googleSheetsAccess.log_to_google(data, google_spreadsheet_id)
+            successful = True
+        except:
+            upload_attempts += 1
+            time.sleep(3)
+
+
 if __name__ == '__main__':
-    simple_timed_loop()
+    singleRequest()
