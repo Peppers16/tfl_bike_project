@@ -2,3 +2,6 @@ apiCredentials.txt
 data/*
 googleCredentials.json
 token.pickle
+.idea/*
+__pycache__/*
+environment/*
