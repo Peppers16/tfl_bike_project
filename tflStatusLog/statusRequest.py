@@ -16,7 +16,7 @@ import googleSheetsAccess
 
 credentials_file = 'apiCredentials.txt'
 google_spreadsheet_id = '1j2uY1NJwuTdeCQ2OoFzNDcfTXM7s3OkLvjKa6Wy9PlU'  # Here's one I made earlier
-csv_file = 'data/statuslog.csv'
+csv_file = '/mnt/ntfsHDD/tfl_logging/TFL_Status_Log.csv'  # Directory for the Raspberry Pi
 
 
 def read_api_credentials(txt_file):
@@ -138,6 +138,12 @@ def singleRequest(log_to_google=True, log_to_csv=False):
      By default, logs to Google and also logs to CSV """
     data = request_and_format()
     print('Requested: ' + time.ctime())
+    # Record to CSV if requested
+    if log_to_csv:
+        try:
+            log_now_csv(csv_file)
+        except:
+            print("Warning: Failed to write to CSV")
     # Record to Google if requested (make 3 attempts)
     if log_to_google:
         upload_attempts = 0
@@ -150,12 +156,6 @@ def singleRequest(log_to_google=True, log_to_csv=False):
                 print("Warning: Failed to upload to Google")
                 upload_attempts += 1
                 time.sleep(3)
-    # Record to CSV if requested
-    if log_to_csv:
-        try:
-            log_now_csv(csv_file)
-        except:
-            print("Warning: Failed to write to CSV")
 
 
 if __name__ == '__main__':
