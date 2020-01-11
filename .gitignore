@@ -2,7 +2,9 @@ apiCredentials.txt
 data/*
 googleCredentials.json
 token.pickle
-.idea/*
+workspace.xml
 __pycache__/*
 environment/*
 cycle_journeys - Shortcut
+.pytest_cache
+.ipynb_checkpoints/

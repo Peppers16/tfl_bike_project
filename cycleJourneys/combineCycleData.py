@@ -11,7 +11,7 @@ from numpy import nan, object, datetime64
 
 page_file = 'cycling.data.tfl.gov.uk.html'
 regex = "^https://cycling.data.tfl.gov.uk/usage-stats/.*Journey.*Data.*.csv"
-output_directory = r"F:/Josh Documents (HDD)/tfl_project_csvs/cycle_journeys/"
+output_directory = r"data/cycle_journeys/"
 seconds_per_call = 60/300
 
 
@@ -199,7 +199,7 @@ def combine_csvs(in_directory, file_out, compression='gzip', drop_st_names=True)
 
 
 if __name__ == '__main__':
-    in_directory = r"F:/Josh Documents (HDD)/tfl_project_csvs/cycle_journeys/"
+    in_directory = r"../data/cycle_journeys/"
     file_out = 'JourneysDataCombined.csv'
     stations_out = 'Station Lookup.csv'
 
