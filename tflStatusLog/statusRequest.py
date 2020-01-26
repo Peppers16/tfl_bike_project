@@ -13,23 +13,13 @@ import csv
 import datetime
 import time
 import googleSheetsAccess
+from logging_functions import *
 
 credentials_file = 'apiCredentials.txt'
 google_spreadsheet_id = '1j2uY1NJwuTdeCQ2OoFzNDcfTXM7s3OkLvjKa6Wy9PlU'  # Here's one I made earlier
 csv_file = '/mnt/ntfsHDD/tfl_logging/TFL_Status_Log.csv'  # Directory for the Raspberry Pi
 
-
-def read_api_credentials(txt_file):
-    """User is required to save a txt file with two lines: the first being their applicationID
-    and the second being their application key"""
-    global credentials
-    credentials = {}
-    with open(txt_file) as f:
-        credentials['app_id'] = f.readline().rstrip()
-        credentials['app_key'] = f.readline().rstrip()
-
-
-read_api_credentials(credentials_file)
+credentials = read_api_credentials(credentials_file)
 
 
 def request_meta_modes():
@@ -60,27 +50,6 @@ def request_tube_status():
     response = requests.get(tube_status_url, params=credentials)
     tube_status_json = response.json()
     return tube_status_json
-
-
-def create_csv(csv_out, headers):
-    if csv_out[-4:] != '.csv':
-        raise ValueError('Expecting a csv_out argument ending with ".csv"')
-    if os.path.isfile(csv_out):
-        print(csv_out + ' already exists. File will not be overwritten')
-        return
-    if type(headers) is not list:
-        raise ValueError('Expecting a list of headers as the headers argument')
-
-    f = open(csv_out, 'x', newline='')  # x to create file: error if it already exists
-    writer = csv.writer(f)
-    writer.writerow(headers)
-    f.close()
-
-
-def append_to_csv(csvfile, row_items):
-    with open(csvfile, 'a', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(row_items)
 
 
 def extract_status_row(timestamp, line_status):

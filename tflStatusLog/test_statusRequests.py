@@ -1,7 +1,9 @@
 from statusRequest import *
+from logging_functions import *
+
 
 def test_read_api_credentials():
-    read_api_credentials('apiCredentials.txt')
+    credentials = read_api_credentials('apiCredentials.txt')
     assert credentials['app_id'] != ''
     assert credentials['app_key'] != ''
 
