@@ -1,8 +1,9 @@
 from cycleJourneys.combineCycleData import *
-from pandas import DataFrame
+from pandas import DataFrame, read_csv
 from numpy import nan, isnan, any
+import mock
 
-in_directory = r"F:/Josh Documents (HDD)/tfl_project_csvs/cycle_journeys/"
+in_directory = r"../data/cycle_journeys/"
 
 def test_pop_station():
     test_df = DataFrame({'foo': [1, 2, 3, 2, 1], 'bar': ['one', 'two', 'three', 'two', 'one']})
@@ -30,15 +31,7 @@ def test_keyvals_to_df():
     assert 'one' == out_df.loc[out_df['Station ID'] == 1, 'Station Name'].values
 
 
-def test_fix_ESLT_issue():
-    bad_csv = '21JourneyDataExtract31Aug2016-06Sep2016.csv'
-    good_csv = '99JourneyDataExtract28Feb2018-06Mar2018.csv'
-    bad_df = read_csv(in_directory + bad_csv, index_col=0, encoding="ISO-8859-1", dtype='str', nrows=10)
-    good_df = read_csv(in_directory + good_csv, index_col=0, encoding="ISO-8859-1", dtype='str')
-    _, key_vals = pop_station(good_df, 'EndStation Id', 'EndStation Name')
-    assert 'EndStation Logical Terminal' in bad_df.columns
-    assert 'EndStation Logical Terminal' not in good_df.columns
-    fixed_df = fix_ESLT_issue(df=bad_df, key_vals=key_vals, bad_id='EndStation Logical Terminal'
-                              ,name_column='EndStation Name',desired_id= 'EndStation Id')
-    assert 'EndStation Logical Terminal' not in fixed_df.columns
-    assert (fixed_df[fixed_df['EndStation Name'] == 'Bermondsey Street, Bermondsey']['EndStation Id'] == '321').all()
+def test_determine_columns():
+    file = "05JourneyDataExtract01May2016-17May2016.csv"
+    # This simulates user input of 'yes' in response to question
+    assert len(determine_columns(in_directory, file, 9)) == 9
