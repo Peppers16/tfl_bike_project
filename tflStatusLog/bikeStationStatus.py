@@ -3,7 +3,6 @@ import requests
 import datetime
 
 credentials_file = 'apiCredentials.txt'
-credentials = read_api_credentials(credentials_file)
 csv_file = '/mnt/ntfsHDD/tfl_logging/bikepoint_statuses.csv'
 
 def extract_station_data(station_data, timestamp):
@@ -16,7 +15,7 @@ def extract_station_data(station_data, timestamp):
     return [timestamp, station_id, int(docked_bikes), int(empty_docks)]
 
 
-def request_station_status():
+def request_station_status(credentials):
     station_status_url = 'https://api.tfl.gov.uk/bikepoint'
     response = requests.get(station_status_url, params=credentials)
     tube_status_json = response.json()
@@ -30,8 +29,9 @@ def create_csv_if_needed(csv_file):
 
 
 if __name__ == '__main__':
+    credentials = read_api_credentials(credentials_file)
     timestamp = datetime.datetime.now()
-    data = request_station_status()
+    data = request_station_status(credentials)
     create_csv_if_needed(csv_file)
     for station in data:
         row = extract_station_data(station, timestamp)
