@@ -6,6 +6,7 @@ import time
 import os
 from pandas import read_csv, concat, DataFrame, Int64Dtype
 from numpy import nan, object, datetime64
+import csv as csv
 
 # Note the pyarrow dependency seems to need to be installed by pip, not conda
 
@@ -13,6 +14,7 @@ page_file = 'cycling.data.tfl.gov.uk.html'
 regex = "^https://cycling.data.tfl.gov.uk/usage-stats/.*Journey.*Data.*.csv"
 output_directory = r"data/cycle_journeys/"
 seconds_per_call = 60/300
+expected_n_cols = 9
 
 
 def download_csvs_matching_regex(page_file, regex, output_directory, seconds_per_call):
@@ -47,24 +49,37 @@ def download_csvs_matching_regex(page_file, regex, output_directory, seconds_per
     print('done!')
 
 
-def combine_csvs_to_list_of_dfs(in_directory):
-    """Searches for all .csv files in the input directory and, reads them as dfs. Builds a list of dfs which can
-    later be concatenated"""
-    df_list = []
-    for i, file in enumerate(os.listdir(in_directory)):
-        if file.endswith('.csv'):
-            start = time.time()
-            print(i, "combining", file)
-            df_list.append(
-                read_csv(in_directory + file, infer_datetime_format=True, parse_dates=[3, 6], cache_dates=True
-                         , index_col=0, encoding="ISO-8859-1", na_values=nan)  # ISO encoding needed to avoid errors
-            )
-            print('took {:1.1f} seconds'.format(time.time()-start))
-    print('Done!')
-    return df_list
+# These are all functions used in the read_csvs_generator
+def get_csv_headers(in_directory, csv_name):
+    with open(in_directory + csv_name, 'r', newline='') as csv_file:
+        reader = csv.reader(csv_file, delimiter=',', quotechar='"')
+        line = reader.__next__()
+        return line
 
 
-def read_csvs_generator(in_directory):
+def ask_cols_to_use(header, expected):
+    print("HEY! unexpected header length of", len(header))
+    print(header)
+    extra_columns = header[expected:]
+    if all([col == '' for col in extra_columns]):
+        print("All extras are blank columns. Correcting automatically...")
+        return header[:expected]
+    correct_columns = header.copy()
+    while len(correct_columns) != expected:
+        delete = input('please name one column to drop:')
+        correct_columns.remove(delete)
+    return correct_columns
+
+
+def determine_columns(in_directory, csv_name, expected):
+    header = get_csv_headers(in_directory, csv_name)
+    if len(header) == expected:
+        return header
+    else:
+        return ask_cols_to_use(header, expected)
+
+
+def read_csvs_generator(in_directory, expected):
     """Returns a generator which searches for all .csv files in the input directory and, returns each of them as a df
     This is more efficient for use in pd.concat() than reading all the CSVs in bulk"""
     file_list, file_sizes = scan_files(in_directory)
@@ -73,10 +88,12 @@ def read_csvs_generator(in_directory):
         if file.endswith('.csv'):
             if i % 10 == 0:  # give time update
                 time_report(start_time, i, file_sizes)
+            use_cols = determine_columns(in_directory, file, expected)
             print(str(i+1)+'/'+str(len(file_list)), file)
             yield file, read_csv(in_directory + file
-                           # , infer_datetime_format=True, parse_dates=[3, 6], cache_dates=True
-                           , index_col=0, encoding="ISO-8859-1", dtype='str')  # ISO encoding needed to avoid errors
+                                 , usecols=use_cols
+                                 # , infer_datetime_format=True, parse_dates=[3, 6], cache_dates=True
+                                 , index_col=0, encoding="ISO-8859-1", dtype='str')  # ISO encoding needed to avoid errors
 
 
 def scan_files(in_directory):
@@ -96,31 +113,6 @@ def time_report(start_time, i, file_sizes):
     print('\t{:1.1f} elapsed, estimated remaining time: {:1.1f}'.format(elapsed / 60, est_remaining / 60))
 
 
-def csvs_to_hdf5_in_chunks(in_directory, file_out):
-    """Returns a generator which searches for all .csv files in the input directory and, returns each of them as a df
-    This is more efficient for use in pd.concat() than reading all the CSVs in bulk"""
-    if os.path.isfile(in_directory + file_out):
-        raise FileExistsError("Error: file already exists")
-    file_list = [f for f in os.listdir(in_directory) if f.endswith('.csv')]
-    n_files = len(file_list)
-    start_time = time.time()
-    df_list = []
-    for i, file in enumerate(file_list):
-        if file.endswith('.csv'):
-            print(str(i) + '/' + str(n_files), file)
-            # read csv to a df and append to a list of dataframes
-            df_list.append(
-                read_csv(in_directory + file, infer_datetime_format=True, parse_dates=[3, 6]
-                         , cache_dates=True, index_col=0, encoding="ISO-8859-1"
-                         ))
-            # every 10 iterations we concatenate the list of DataFrames then append the result to the HDF5 file
-            if (i % 10 == 0) and (i > 0):
-                time_report(start_time, i, n_files)
-                df_to_save = concat(df_list, axis=0, sort=False)
-                # print(df_to_save.info())
-                df_to_save.to_hdf(in_directory + file_out, key='data', mode='a', format='table', append=True)
-
-
 def pop_station(df, key_col, description_col):
     """Function is designed to remove a description column and extract (key,value) pairs instead for use as metadata.
     It returns the df with 'description_col' dropped, and a set of all identified key_value pairs"""
@@ -133,21 +125,6 @@ def pop_station(df, key_col, description_col):
 
 def keyvals_to_df(key_vals):
     return DataFrame(data=key_vals, columns=['Station ID', 'Station Name'])
-
-
-def fix_ESLT_issue(df, key_vals, bad_id, name_column, desired_id):
-    """Some csvs have an undesired station key which is not consistent with the other csvs
-    Since the station name is still consistent, we can use the identified key value pairs to replace the bad columns
-    with the correct keys
-    """
-    names_to_id = df[name_column].to_list()
-    correct_ids = [
-        next(id for id, name in key_vals if name == name_to_id)
-        for name_to_id in names_to_id
-    ]
-    df = df.rename(columns={bad_id: desired_id})
-    df[desired_id] = correct_ids
-    return df
 
 
 def process_st_names(df, keyvaluepairs):
@@ -169,7 +146,7 @@ def process_st_names(df, keyvaluepairs):
     return df, keyvaluepairs
 
 
-def combine_csvs(in_directory, file_out, compression='gzip', drop_st_names=True):
+def combine_csvs(in_directory, file_out, expected_n_cols, compression='gzip', drop_st_names=True):
     """Reads csvs in the directory and combines them into one file using pandas. Appends to the file, so does not
     take place entirely in memory.
     If drop_st_names=True then returns all key-value-pairs identified. Otherwise returns None"""
@@ -178,7 +155,7 @@ def combine_csvs(in_directory, file_out, compression='gzip', drop_st_names=True)
     keyvaluepairs = set()
     header = True  # first pass only
     problem_csvs = []
-    for csvname, df in read_csvs_generator(in_directory):
+    for csvname, df in read_csvs_generator(in_directory, expected_n_cols):
         if drop_st_names:
             try:
                 df, keyvaluepairs = process_st_names(df, keyvaluepairs)
@@ -205,6 +182,6 @@ if __name__ == '__main__':
 
     # expected_cols = ['Rental Id', 'Duration', 'Bike Id', 'End Date', 'EndStation Id', 'EndStation Name', 'Start Date'
     #                  , 'StartStation Id', 'StartStation Name']
-    stations = combine_csvs(in_directory, file_out, compression='infer',  drop_st_names=True)
+    stations = combine_csvs(in_directory, file_out, expected_n_cols, compression='infer',  drop_st_names=True)
     # also save the station names as metadata
     stations.to_csv(in_directory+stations_out, index=False)
