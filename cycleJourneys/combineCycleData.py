@@ -12,7 +12,7 @@ import csv as csv
 
 page_file = 'cycling.data.tfl.gov.uk.html'
 regex = "^https://cycling.data.tfl.gov.uk/usage-stats/.*Journey.*Data.*.csv"
-output_directory = r"data/cycle_journeys/"
+output_directory = r"../data/cycle_journeys/"
 seconds_per_call = 60/300
 expected_n_cols = 9
 
@@ -180,6 +180,7 @@ if __name__ == '__main__':
     file_out = 'JourneysDataCombined.csv'
     stations_out = 'Station Lookup.csv'
 
+    download_csvs_matching_regex(page_file, regex, output_directory, seconds_per_call)
     # expected_cols = ['Rental Id', 'Duration', 'Bike Id', 'End Date', 'EndStation Id', 'EndStation Name', 'Start Date'
     #                  , 'StartStation Id', 'StartStation Name']
     stations = combine_csvs(in_directory, file_out, expected_n_cols, compression='infer',  drop_st_names=True)

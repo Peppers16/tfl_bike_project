@@ -6,11 +6,12 @@ import numpy as np
 import pandas as pd
 from tflStatusLog.logging_functions import read_api_credentials
 from tflStatusLog.bikeStationStatus import request_station_status
+import pickle
 
 credentials_file = r'..\tflStatusLog\apiCredentials.txt'
 input_csv = r'..\data\cycle_journeys\JourneysDataCombined.csv'
 output_csv = r'..\data\cycle_journeys\JourneysDataCombined_CLEANSED.csv'
-
+output_lookup_dir = r'..\data\cycle_journeys\\'
 
 def create_tfl_station_lookups(credentials_file):
     """This makes a request to the bikepoints API, and creates authority lookups which will
@@ -135,7 +136,7 @@ def correct_suspect_enddates(df, tolerance=60):
 transformations = [correct_start_date_errors, correct_0_end_date_stations, correct_suspect_enddates]
 
 
-def main(input_csv, output_csv, transformations, credentials_file):
+def main(input_csv, output_csv, transformations, credentials_file, output_lookup_dir):
     bp_to_name, tn_to_bp, bp_to_latlongs = create_tfl_station_lookups(credentials_file)
 
     df_iter = pd.read_csv(input_csv, header=0, sep=',', parse_dates=['Start Date', 'End Date']
@@ -151,8 +152,12 @@ def main(input_csv, output_csv, transformations, credentials_file):
         # save chunk
         df_chunk.to_csv(output_csv, mode=mode, index=False, header=header)
         mode, header = 'a', False  # all subsequent chunks
-    print("Done!")
+    print("Done with cleansing!")
+    pickle.dump(bp_to_name, open(output_lookup_dir + 'bikepointid_to_commonname.p', 'wb'))
+    pickle.dump(bp_to_latlongs, open(output_lookup_dir + 'bikepointid_to_latlongs.p', 'wb'))
+    print("Dumped lookups as pickle files!")
+    print()
 
 
 if __name__ == '__main__':
-    main(input_csv, output_csv, transformations, credentials_file)
+    main(input_csv, output_csv, transformations, credentials_file, output_lookup_dir)
