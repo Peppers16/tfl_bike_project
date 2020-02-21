@@ -1,7 +1,6 @@
 from cycleJourneys.combineCycleData import *
 from pandas import DataFrame, read_csv
 from numpy import nan, isnan, any
-import mock
 
 in_directory = r"../data/cycle_journeys/"
 
