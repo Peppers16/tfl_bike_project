@@ -8,3 +8,4 @@ environment/*
 cycle_journeys - Shortcut
 .pytest_cache
 .ipynb_checkpoints/
+cycling.data.tfl.gov.uk_files/
