@@ -92,6 +92,7 @@ def read_csvs_generator(in_directory, expected):
             print(str(i+1)+'/'+str(len(file_list)), file)
             yield file, read_csv(in_directory + file
                                  , usecols=use_cols
+                                 , dayfirst=True
                                  # , infer_datetime_format=True, parse_dates=[3, 6], cache_dates=True
                                  , index_col=0, encoding="ISO-8859-1", dtype='str')  # ISO encoding needed to avoid errors
 

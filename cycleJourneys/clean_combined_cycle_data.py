@@ -140,7 +140,7 @@ def main(input_csv, output_csv, transformations, credentials_file, output_lookup
     bp_to_name, tn_to_bp, bp_to_latlongs = create_tfl_station_lookups(credentials_file)
 
     df_iter = pd.read_csv(input_csv, header=0, sep=',', parse_dates=['Start Date', 'End Date']
-                           ,infer_datetime_format=True, chunksize=1000000)
+                          , dayfirst=True, infer_datetime_format=True, chunksize=1000000)
     mode, header = 'w+', True  # for first chunk
     for df_chunk in df_iter:
         # apply date transformations

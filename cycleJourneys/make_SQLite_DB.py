@@ -23,7 +23,7 @@ c.execute("""CREATE TABLE journeys (
             """)
 
 for chunk in pd.read_csv(clean_journeys, header=0, sep=',', parse_dates=['Start Date', 'End Date'],
-                         infer_datetime_format=True, chunksize=1000000):
+                         dayfirst=True, infer_datetime_format=True, chunksize=1000000):
     chunk["year"] = chunk["Start Date"].dt.year
     chunk["month"] = chunk["Start Date"].dt.month
     chunk["hour"] = chunk["Start Date"].dt.hour
