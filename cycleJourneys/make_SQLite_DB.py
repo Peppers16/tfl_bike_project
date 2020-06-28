@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 
-# RUN THIS SCRIPT FROM THE INTERPRETER WITH tflProject AS THE PWD
+# RUN THIS SCRIPT FROM THE INTERPRETER WITH tflProject\cycleJourneys AS THE PWD
 
 db = sqlite3.connect(r'bike_db.db')
 clean_journeys = r'..\data\cycle_journeys\JourneysDataCombined_CLEANSED.csv'
