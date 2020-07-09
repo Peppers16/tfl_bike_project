@@ -44,6 +44,8 @@ class TestCity:
         assert len(basic_city._agents) == 0
         assert basic_city._stations[0]._docked == 7
         assert basic_city._stations[1]._docked == 9
+        assert len(basic_city._finished_journeys) == 1
+        assert len(basic_city._failed_ends) == 0
 
     def test_two_journeys(self, basic_city):
         # two arriving at same time
@@ -62,6 +64,8 @@ class TestCity:
         assert basic_city.get_station(0)._docked == 6
         assert basic_city.get_station(1)._docked == 10
         assert len(basic_city._agents) == 0
+        assert len(basic_city._finished_journeys) == 2
+        assert len(basic_city._failed_ends) == 0
 
     def test_two_at_full(self, basic_city):
         basic_city.get_station(1)._docked = 15
@@ -76,6 +80,8 @@ class TestCity:
         basic_city.elapse_time(1)
         assert basic_city.get_station(1)._docked == 16
         assert len(basic_city._agents) == 1
+        assert len(basic_city._finished_journeys) == 1
+        assert len(basic_city._failed_ends) == 1
 
     def test_failed_end(self, basic_city):
         basic_city.get_station(1)._docked = 16
@@ -88,7 +94,20 @@ class TestCity:
         basic_city.elapse_time(3)
         assert basic_city.get_station(1)._docked == 16
         assert len(basic_city._agents) == 1
+        assert len(basic_city._finished_journeys) == 0
+        assert len(basic_city._failed_ends) == 1
         # TODO: Actually handle and test new destination logic
+
+    def test_failed_start(self, basic_city):
+        basic_city.get_station(0)._docked = 0
+        basic_city.generate_journey(
+            start_st=basic_city.get_station(0)
+            ,dest_st=basic_city.get_station(1)
+            ,duration=3)
+        assert len(basic_city._agents) == 0
+        assert len(basic_city._finished_journeys) == 0
+        assert len(basic_city._failed_ends) == 0
+        assert len(basic_city._failed_starts) == 1
 
 
 class TestStation:

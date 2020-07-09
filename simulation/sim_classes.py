@@ -8,8 +8,13 @@ class City:
         self._stations = dict()
         self._agents = []
         self._time = 0
+        # It may make sense to create a class that logs data. For now, keeping simple with lists
+        self._failed_starts = []
+        self._failed_ends = []
+        self._finished_journeys = []
 
     def elapse_time(self, t=1):
+        """After being created, this is where the bulk of agent actions take place"""
         self._time += t
         # TODO: eventually make this more efficient so it does not have to pass _agents 3 times
         for agent in self._agents:
@@ -63,13 +68,13 @@ class City:
         return self._stations[key]
 
     def log_failed_end(self):
-        pass
+        self._failed_ends.append(self._time)
 
     def log_failed_start(self):
-        pass
+        self._failed_starts.append(self._time)
 
     def log_finished_journey(self):
-        pass
+        self._finished_journeys.append(self._time)
 
 
 class Station:
