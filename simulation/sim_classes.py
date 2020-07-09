@@ -11,8 +11,13 @@ class City:
 
     def elapse_time(self, t=1):
         self._time += t
+        # TODO: eventually make this more efficient so it does not have to pass _agents 3 times
         for agent in self._agents:
             agent.travel(t)
+        self.cleanup_agents()  # agents should not remove themselves whilst elapse_time is iterating over _agents
+        for agent in self._agents:  # agents should determine next destination when others are done travelling
+            if agent.need_new_destination:
+                agent.determine_next_destination()
 
     def generate_journey(self, start_st, dest_st, duration:int):
         """
@@ -34,6 +39,10 @@ class City:
             u = User(self, dest_st, duration)
             self._agents.append(u)
             u.undock_bike(start_st)
+
+    def cleanup_agents(self):
+        """remove agents from the city if they are finished"""
+        self._agents = [a for a in self._agents if not a.finished]
 
     def add_station(self, s):
         """
@@ -61,9 +70,6 @@ class City:
 
     def log_finished_journey(self):
         pass
-
-    def remove_user(self, user):
-        self._agents.remove(user)
 
 
 class Station:
@@ -119,6 +125,8 @@ class Agent:
         self._current_destination = destination
         self._remaining_duration = duration
         self._city = city
+        self.finished = False
+        self.need_new_destination = False
 
     def dock_bike(self):
         pass
@@ -127,7 +135,8 @@ class Agent:
         pass
 
     def determine_next_destination(self):
-        pass
+        # TODO: ASSIGN NEW STATION TO self._current_destination
+        self.need_new_destination = False
 
     def arrival(self):
         pass
@@ -144,14 +153,14 @@ class User(Agent):
         """Overrides arrival with User behaviour"""
         if self._current_destination.is_full():
             self._city.log_failed_end()
-            self.determine_next_destination()
+            self.need_new_destination = True
         else:
             self.dock_bike()
 
     def dock_bike(self):
         """A user is removed after docking a bike sucessfully"""
         self._current_destination.take_bike()
-        self._city.remove_user(self)
+        self.finished = True
         self._city.log_finished_journey()
 
     def undock_bike(self, station: Station):
