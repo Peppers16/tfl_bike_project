@@ -34,6 +34,12 @@ class City:
             for j in journey_demand:
                 self.generate_journey(*j)
 
+    def call_for_new_destinations(self):
+        """Simply instructs all agents to assign themselves a new destination if they need one"""
+        for agent in self._agents:
+            if agent.need_new_destination:
+                agent.determine_next_destination()
+
     def main_elapse_time(self, t=1):
         """
         This is where the bulk of simulation behaviour takes place.
@@ -47,13 +53,10 @@ class City:
         This order was chosen to try and maximise the useful context available to objects when they perform their
         actions.
         """
-        self._time += t
         self.move_agents(t)
         self.request_demand(t)
-        # agents now decide their next destination if required
-        for agent in self._agents:
-            if agent.need_new_destination:
-                agent.determine_next_destination()
+        self.call_for_new_destinations()
+        self._time += t
 
     def generate_journey(self, start_st, dest_st, duration:int):
         """
@@ -168,7 +171,7 @@ class Station:
         # TODO: Replace Dummy logic with realistic demand. Right now station picks random destination, possibly itself
         journey_demand = []
         for i in range(randint(0, 3*t)):
-            destination = choice(self._city._stations)
+            destination = choice(list(self._city._stations.values()))
             duration = randint(1, 5)
             journey_demand.append((self, destination, duration))
         return journey_demand
@@ -191,6 +194,10 @@ class Agent:
 
     def determine_next_destination(self):
         # TODO: ASSIGN NEW STATION TO self._current_destination
+        candidates = [st for st in self._city._stations.values() if not st.is_full()]
+        duration = randint(1, 5)
+        self._current_destination = choice(candidates)
+        self._remaining_duration = duration
         self.need_new_destination = False
 
     def arrival(self):

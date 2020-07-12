@@ -119,6 +119,24 @@ class TestCity:
         assert len(basic_city._finished_journeys) > 0
         assert basic_city._time == 4
 
+    def test_user_next_destination(self, basic_city):
+        basic_city.get_station(1)._docked = 16
+        basic_city.generate_journey(
+            start_st=basic_city.get_station(0)
+            , dest_st=basic_city.get_station(1)
+            , duration=3)
+        user = basic_city._agents[0]
+        assert user._current_destination == basic_city.get_station(1)
+
+        basic_city.move_agents(3)
+        assert user.need_new_destination
+        assert len(basic_city._failed_ends) == 1
+
+        basic_city.call_for_new_destinations()
+        assert user._current_destination == basic_city.get_station(0)
+        assert user._remaining_duration > 0
+        assert not user.need_new_destination
+
 
 class TestStation:
     def test_underflow(self, nrly_empty_stn):
