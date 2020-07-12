@@ -1,5 +1,6 @@
-from ..sim_classes import City, Station
 import pytest
+from random import seed
+from ..sim_classes import City, Station
 
 
 # pytest fixtures define a class instance that can be re-used for various tests, by passing it as an argument
@@ -36,11 +37,11 @@ class TestCity:
         assert len(basic_city._agents) == 1
         assert basic_city._stations[0]._docked == 7
         assert basic_city._stations[1]._docked == 8
-        basic_city.elapse_time(1)
+        basic_city.move_agents(1)
         assert len(basic_city._agents) == 1
         assert basic_city._stations[0]._docked == 7
         assert basic_city._stations[1]._docked == 8
-        basic_city.elapse_time(2)
+        basic_city.move_agents(2)
         assert len(basic_city._agents) == 0
         assert basic_city._stations[0]._docked == 7
         assert basic_city._stations[1]._docked == 9
@@ -60,7 +61,7 @@ class TestCity:
             ,dest_st=basic_city.get_station(1)
             ,duration=1)
         assert len(basic_city._agents) == 2
-        basic_city.elapse_time(1)
+        basic_city.move_agents(1)
         assert basic_city.get_station(0)._docked == 6
         assert basic_city.get_station(1)._docked == 10
         assert len(basic_city._agents) == 0
@@ -77,7 +78,7 @@ class TestCity:
             start_st=basic_city.get_station(0)
             , dest_st=basic_city.get_station(1)
             , duration=1)
-        basic_city.elapse_time(1)
+        basic_city.move_agents(1)
         assert basic_city.get_station(1)._docked == 16
         assert len(basic_city._agents) == 1
         assert len(basic_city._finished_journeys) == 1
@@ -91,7 +92,7 @@ class TestCity:
             ,duration=3)
         assert basic_city.get_station(0)._docked == 7
         assert basic_city.get_station(1)._docked == 16
-        basic_city.elapse_time(3)
+        basic_city.move_agents(3)
         assert basic_city.get_station(1)._docked == 16
         assert len(basic_city._agents) == 1
         assert len(basic_city._finished_journeys) == 0
@@ -108,6 +109,15 @@ class TestCity:
         assert len(basic_city._finished_journeys) == 0
         assert len(basic_city._failed_ends) == 0
         assert len(basic_city._failed_starts) == 1
+
+    def test_main_elapse_time(self, basic_city):
+        """important test: includes a lot of simulation logic"""
+        seed(16)
+        basic_city.main_elapse_time(1)
+        assert len(basic_city._agents) > 0
+        basic_city.main_elapse_time(3)
+        assert len(basic_city._finished_journeys) > 0
+        assert basic_city._time == 4
 
 
 class TestStation:
@@ -134,3 +144,9 @@ class TestStation:
             Station(capacity=0, docked_init=0)
         with pytest.raises(ValueError):
             Station(capacity=2, docked_init=-1)
+
+    def test_generate_demand(self, basic_city):
+        seed(16)
+        trial_station = basic_city.get_station(0)
+        demand = trial_station.decide_journey_demand(1)
+        assert len(demand) > 0
