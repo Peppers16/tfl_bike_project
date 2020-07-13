@@ -1,4 +1,4 @@
-from logging_functions import *
+from tflStatusLog.logging_functions import *
 import requests
 import datetime
 
