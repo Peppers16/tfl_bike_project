@@ -124,5 +124,11 @@ bp_summaries.to_sql('station_metadata'
                         , 'longitude': 'REAL'
                     }
                     )
+
+
+db.execute("""
+    CREATE UNIQUE INDEX "meta_id" ON "station_metadata" ("bikepoint_id");
+""")
+
 db.close()
 print('done')

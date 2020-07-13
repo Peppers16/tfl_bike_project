@@ -1,4 +1,50 @@
 from random import randint, choice
+import sqlite3
+
+
+class LondonCreator:
+    def __init__(self):
+        """
+        Creates a city that emulates the true London BBS, including its stations.
+        TODO: decide best way to customise simulated versions of London. You could instantiate a LondonCreator
+         and manually modify its .london attribute? Or you could pass it parameters in a spreadsheet or similar.
+        """
+        self.london = City()
+
+    def select_query_db(self, query):
+        dbpath = "data/bike_db.db"
+        db = sqlite3.connect(dbpath)
+        c = db.cursor()
+        c.execute(query)
+        rows = c.fetchall()
+        db.close()
+        return rows
+
+    def populate_tfl_stations(self):
+        """
+        Takes the new city and adds stations to it which reflect the true TFL BSS.
+        Uses a SQLite table, station_metadata, which has already been prepared.
+        Adds additional attributes to stations: _latitude, _longitude, _common_name
+        """
+        rows = self.select_query_db(
+            """
+            SELECT
+                bikepoint_id
+                ,max_capacity AS capacity
+                ,common_name
+                ,latitude
+                ,longitude 
+            FROM station_metadata
+            """
+        )
+        for row in rows:
+            # TODO: functionality to define the 'docked_init' attributes that we want.
+            #  it possible that the sqlite query will not be flexible enough for trying various simulations
+            s = Station(capacity=row[1], docked_init=row[1]//2, st_id=row[0])
+            s._latitude = row[3]
+            s._longitude = row[4]
+            s._common_name = row[2]
+            self.london.add_station(s)
 
 
 class City:

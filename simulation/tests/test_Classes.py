@@ -1,6 +1,7 @@
 import pytest
 from random import seed
-from ..sim_classes import City, Station
+from math import isclose
+from ..sim_classes import City, Station, LondonCreator
 
 
 # pytest fixtures define a class instance that can be re-used for various tests, by passing it as an argument
@@ -168,3 +169,14 @@ class TestStation:
         trial_station = basic_city.get_station(0)
         demand = trial_station.decide_journey_demand(1)
         assert len(demand) > 0
+
+
+class TestLondonCreator:
+    def test_populate_stations(self):
+        lc = LondonCreator()
+        lc.populate_tfl_stations()
+        for station in lc.london._stations.values():
+            assert 10 <= station._capacity <= 64
+        assert lc.london.get_station(6)._capacity == 18
+        assert isclose(lc.london.get_station(6)._latitude, 51.518117, abs_tol=0.000001)
+        assert lc.london.get_station(6)._common_name.startswith('Broadcasting House')
