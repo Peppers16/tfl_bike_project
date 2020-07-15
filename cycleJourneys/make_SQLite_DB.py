@@ -1,10 +1,12 @@
 import sqlite3
 import pandas as pd
+from os import rename
 
 # RUN THIS SCRIPT FROM THE INTERPRETER WITH tflProject\cycleJourneys AS THE PWD
 
 db = sqlite3.connect(r'bike_db.db')
 clean_journeys = r'..\data\cycle_journeys\JourneysDataCombined_CLEANSED.csv'
+destination_location = r'..\data\bike_db.db'
 
 c = db.cursor()
 c.execute("""CREATE TABLE journeys (
@@ -40,6 +42,14 @@ db.execute("""CREATE INDEX end_station ON journeys("EndStation Id")""")
 db.execute("""CREATE INDEX bike_id ON journeys("Bike Id")""")
 db.execute("""CREATE INDEX date_hour ON journeys(year, month, "weekday", hour)""")
 db.execute("""CREATE INDEX start_end ON journeys("StartStation Id", "EndStation Id")""")
+# Addition: minute of day with applicable indicies
+db.execute("""ALTER TABLE journeys ADD minute_of_day INTEGER""")
+db.execute("""UPDATE journeys SET minute_of_day = 60* strftime('%H', "Start Date") + strftime('%M', "Start Date")""")
+db.execute("""CREATE INDEX minute ON journeys(minute_of_day)""")
+# Slow but helps the optimizer to prioritize filtering by minute.
+db.execute("""ANALYZE journeys""")
 db.close()
 
 # MOVE FILE TO data/
+rename('bike_db.db', destination_location)
+print("bike_db.db was moved to data/")
