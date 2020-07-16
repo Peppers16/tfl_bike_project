@@ -21,6 +21,7 @@ c.execute("""CREATE TABLE journeys (
                ,"month" INTEGER
                ,"hour" INTEGER
                ,"weekday" INTEGER
+               ,"minute_of_day" INTEGER
                );
             """)
 
@@ -30,6 +31,7 @@ for chunk in pd.read_csv(clean_journeys, header=0, sep=',', parse_dates=['Start 
     chunk["month"] = chunk["Start Date"].dt.month
     chunk["hour"] = chunk["Start Date"].dt.hour
     chunk["weekday"] = chunk["Start Date"].dt.weekday
+    chunk["minute_of_day"] = chunk["hour"]*60 + chunk["Start Date"].dt.minute
     chunk.to_sql("journeys", db, if_exists="append", index=False)
 
 
@@ -42,9 +44,6 @@ db.execute("""CREATE INDEX end_station ON journeys("EndStation Id")""")
 db.execute("""CREATE INDEX bike_id ON journeys("Bike Id")""")
 db.execute("""CREATE INDEX date_hour ON journeys(year, month, "weekday", hour)""")
 db.execute("""CREATE INDEX start_end ON journeys("StartStation Id", "EndStation Id")""")
-# Addition: minute of day with applicable indicies
-db.execute("""ALTER TABLE journeys ADD minute_of_day INTEGER""")
-db.execute("""UPDATE journeys SET minute_of_day = 60* strftime('%H', "Start Date") + strftime('%M', "Start Date")""")
 db.execute("""CREATE INDEX minute ON journeys(minute_of_day)""")
 # Slow but helps the optimizer to prioritize filtering by minute.
 db.execute("""ANALYZE journeys""")
