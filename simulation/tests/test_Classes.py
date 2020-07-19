@@ -9,9 +9,10 @@ from ..sim_classes import City, Station, LondonCreator
 def basic_city():
     """Basic city with two stations in it"""
     c = City()
-    s = Station(16, 8, st_id=0)
+    dummy_demand_dict = {0: 5}
+    s = Station(16, 8, st_id=0, demand_dict=dummy_demand_dict)
     c.add_station(s)
-    c.add_station(Station(16, 8, st_id=1))
+    c.add_station(Station(16, 8, st_id=1, demand_dict=dummy_demand_dict))
     return c
 
 
@@ -167,16 +168,29 @@ class TestStation:
     def test_generate_demand(self, basic_city):
         seed(16)
         trial_station = basic_city.get_station(0)
-        demand = trial_station.decide_journey_demand(1)
+        demand = trial_station.decide_journey_demand(interval=0, elapsing=1)
         assert len(demand) > 0
+
+@pytest.fixture
+def prepop_londoncreator():
+    lc = LondonCreator()
+    lc.populate_tfl_stations()
+    return lc
 
 
 class TestLondonCreator:
-    def test_populate_stations(self):
-        lc = LondonCreator()
-        lc.populate_tfl_stations()
-        for station in lc.london._stations.values():
+    def test_populate_stations(self, prepop_londoncreator):
+        for station in prepop_londoncreator.london._stations.values():
             assert 10 <= station._capacity <= 64
-        assert lc.london.get_station(6)._capacity == 18
-        assert isclose(lc.london.get_station(6)._latitude, 51.518117, abs_tol=0.000001)
-        assert lc.london.get_station(6)._common_name.startswith('Broadcasting House')
+        assert prepop_londoncreator.london.get_station(6)._capacity == 18
+        assert isclose(prepop_londoncreator.london.get_station(6)._latitude, 51.518117, abs_tol=0.000001)
+        assert prepop_londoncreator.london.get_station(6)._common_name.startswith('Broadcasting House')
+
+    def test_populate_station_demand_dicts(self, prepop_londoncreator):
+        prepop_londoncreator.populate_station_demand_dicts()
+        assert prepop_londoncreator.london.get_station(6)._demand_dict[0] > 0
+        demand_at_midnight = prepop_londoncreator.london.get_station(6)._demand_dict[0]
+        demand_at_8 = prepop_londoncreator.london.get_station(6)._demand_dict[480]
+        assert demand_at_8 > demand_at_midnight
+        kingsx_at_8 = prepop_londoncreator.london.get_station(14)._demand_dict[480]
+        assert kingsx_at_8 > demand_at_8

@@ -1,15 +1,26 @@
 from random import randint, choice
 import sqlite3
+import numpy.random
 
 
 class LondonCreator:
-    def __init__(self):
+    def __init__(self, min_year=2015, minute_interval=20, exclude_covid=True, additional_filters=""""""):
         """
         Creates a city that emulates the true London BBS, including its stations.
+
+        min_year: First year from which simulation data will be modelled
+        minute_interval: The granularity with which data will be summarised. E.g. if 20, the journey demand per
+            station will be calculated per every 20-minute interval in a 24 hour period.
+
         TODO: decide best way to customise simulated versions of London. You could instantiate a LondonCreator
          and manually modify its .london attribute? Or you could pass it parameters in a spreadsheet or similar.
         """
-        self.london = City()
+        self.london = City(interval_size=minute_interval)
+        self.min_year = min_year
+        self.minute_interval = minute_interval
+        self.additional_filters = additional_filters
+        if exclude_covid:
+            self.additional_filters = additional_filters + """ AND "Start Date" <= '2020-03-15'"""
 
     def select_query_db(self, query):
         dbpath = "data/bike_db.db"
@@ -26,6 +37,7 @@ class LondonCreator:
         Uses a SQLite table, station_metadata, which has already been prepared.
         Adds additional attributes to stations: _latitude, _longitude, _common_name
         """
+        print("fetching station metadata")
         rows = self.select_query_db(
             """
             SELECT
@@ -37,26 +49,78 @@ class LondonCreator:
             FROM station_metadata
             """
         )
+        print("Populating stations")
         for row in rows:
             # TODO: functionality to define the 'docked_init' attributes that we want.
             #  it possible that the sqlite query will not be flexible enough for trying various simulations
-            s = Station(capacity=row[1], docked_init=row[1]//2, st_id=row[0])
+            s = Station(capacity=row[1]
+                        , docked_init=row[1]//2
+                        , st_id=row[0])
             s._latitude = row[3]
             s._longitude = row[4]
             s._common_name = row[2]
             self.london.add_station(s)
 
+    def populate_station_demand_dicts(self):
+        print(f"fetching all station demand per {self.minute_interval} minute interval")
+        all_demands = self.select_query_db(
+            f"""
+            WITH subset AS (
+                SELECT *
+                FROM journeys
+                WHERE
+                    year >= {self.min_year}
+                    AND weekday = 1
+                    {self.additional_filters}
+            )
+
+            SELECT
+                i."StartStation Id"
+                ,i.interval
+                ,CAST(i.interval_journeys AS REAL) / d.days_in_action / {self.minute_interval} AS avg_journeys_p_minute
+            FROM
+                (
+                    SELECT
+                        "StartStation Id"
+                        ,(minute_of_day / {self.minute_interval}) * {self.minute_interval} AS interval
+                        ,COUNT(*) AS interval_journeys
+                    FROM 
+                        subset
+                    GROUP BY 1,2
+                )AS i
+                INNER JOIN (
+                    SELECT
+                        "StartStation Id"
+                        ,COUNT(DISTINCT DATE("Start Date")) AS days_in_action
+                    FROM 
+                        subset
+                    GROUP BY 1
+                ) AS d
+                    ON i."StartStation Id" = d."StartStation Id"     
+            """
+        )
+        print("fetched. Assigning to stations")
+        for row in all_demands:
+            bikepoint_id, interval, journeys_p_minute = row
+            if bikepoint_id in self.london._stations:
+                self.london.get_station(bikepoint_id)._demand_dict[interval] = journeys_p_minute
+
 
 class City:
-    def __init__(self):
+    def __init__(self, interval_size=20):
         """
         The city class contains Agents and Stations, and has a time attribute.
         Whenever time elapses, User Agents (with destinations) may be generated at Stations.
         Stations must have a distinct st_id.
+
+        The interval_size is a meta parameter that remembers the size of time interval that the station data is
+        collected for. I.e. if interval = 20, then station demand will be grouped into 20-minute chunks.
+        The simulation is not restricted to this interval.
         """
         self._stations = dict()
         self._agents = []
         self._time = 0
+        self._interval_size = interval_size
         # It may make sense to create a class that logs data. For now, keeping simple with lists
         self._failed_starts = []
         self._failed_ends = []
@@ -70,13 +134,16 @@ class City:
             agent.travel(t)
         self.cleanup_agents()  # agents should not remove themselves whilst elapse_time is iterating over _agents
 
-    def request_demand(self, t):
+    def request_demand(self, interval, t):
         """City asks stations to decide what journeys will originate at them, and will attempt to generate any
         requested journeys.
-        In simulation conditions this is called by main_elapse_time()"""
+        In simulation conditions this is called by main_elapse_time()
+        :param interval: the current time interval that the simulation is in.
+        :param t: the number of minutes that are elapsing during this 'round'
+        """
         # Stations now generate demand for more journeys
         for station in self._stations.values():
-            journey_demand = station.decide_journey_demand(t)
+            journey_demand = station.decide_journey_demand(interval=interval, elapsing=t)
             for j in journey_demand:
                 self.generate_journey(*j)
 
@@ -99,8 +166,9 @@ class City:
         This order was chosen to try and maximise the useful context available to objects when they perform their
         actions.
         """
+        current_interval = (self._time // self._interval_size) * self._interval_size
         self.move_agents(t)
-        self.request_demand(t)
+        self.request_demand(interval=current_interval, t=t)
         self.call_for_new_destinations()
         self._time += t
 
@@ -161,7 +229,7 @@ class City:
 
 
 class Station:
-    def __init__(self, capacity=None, docked_init=None, st_id=None):
+    def __init__(self, capacity=None, docked_init=None, st_id=None, demand_dict=None):
         """
         A Station that can receive or release bikes, e.g. bikepoint or depot.
         capacity: total number of docks.
@@ -181,6 +249,10 @@ class Station:
         self._docked = docked_init
         self._id = st_id
         self._city = None
+        if demand_dict:
+            self._demand_dict = demand_dict
+        else:
+            self._demand_dict = dict()
 
     def is_empty(self):
         return self._docked == 0
@@ -207,7 +279,7 @@ class Station:
     def get_id(self):
         return self._id
 
-    def decide_journey_demand(self, t):
+    def decide_journey_demand(self, interval, elapsing=1):
         """
         The station will decide what journeys will start at it during the elapsing time period, including destinations
         and durations, and return their parameters.
@@ -216,7 +288,15 @@ class Station:
         """
         # TODO: Replace Dummy logic with realistic demand. Right now station picks random destination, possibly itself
         journey_demand = []
-        for i in range(randint(0, 3*t)):
+        # check station's demand per minute during this time interval (e.g. 20-40th minute)
+        if interval in self._demand_dict:
+            demand_p_min = self._demand_dict[interval]
+        else:
+            demand_p_min = 0
+        # number of journeys is sampled from poisson process based on current demand per minute
+        n_journeys = numpy.random.poisson(lam=demand_p_min*elapsing)
+
+        for i in range(n_journeys):
             destination = choice(list(self._city._stations.values()))
             duration = randint(1, 5)
             journey_demand.append((self, destination, duration))
