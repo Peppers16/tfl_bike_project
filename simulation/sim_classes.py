@@ -1,6 +1,7 @@
 from random import randint, choice, choices
 import sqlite3
 import numpy.random
+import pickle
 
 
 class LondonCreator:
@@ -134,6 +135,29 @@ class LondonCreator:
                         , destination_id=destination_id
                         , journeys=journeys
                     )
+
+    def create_london_from_scratch(self):
+        print("Creating City using fresh data pulls")
+        self.populate_tfl_stations()
+        self.populate_station_demand_dicts()
+        self.populate_station_destination_dicts()
+        print("Done!")
+        print(".london attribute has been populated using fresh SQL pulls")
+
+    def pickle_city(self, out_dir='london.pickle'):
+        out_file = open(out_dir, 'wb')
+        pickle.dump(self.london, out_file)
+        out_file.close()
+        print(f'City saved as {out_dir} for future use. Use load_pickled_city to use it again')
+
+    def load_pickled_city(self, in_dir='london.pickle'):
+        in_file = open(in_dir, 'rb')
+        self.london = pickle.load(in_file)
+        in_file.close()
+        print(f".london attribute has been loaded from {in_dir}")
+        if not self.london._stations:
+            print("Warning. No stations in loaded city")
+
 
 
 class City:

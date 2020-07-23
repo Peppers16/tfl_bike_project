@@ -23,6 +23,13 @@ def nrly_empty_stn():
     return Station(capacity=16, docked_init=1)
 
 
+@pytest.fixture
+def prepop_londoncreator():
+    lc = LondonCreator()
+    lc.load_pickled_city('simulation/tests/files/london.pickle')
+    return lc
+
+
 class TestCity:
     def testcitystub(self, basic_city):
         assert isinstance(basic_city, City)
@@ -178,12 +185,6 @@ class TestStation:
         # assert that station 1 was picked more often
         assert 0 < n_0_picked < n_1_picked < len(picked_destinations)
 
-@pytest.fixture
-def prepop_londoncreator():
-    lc = LondonCreator()
-    lc.populate_tfl_stations()
-    return lc
-
 
 class TestLondonCreator:
     def test_populate_stations(self, prepop_londoncreator):
@@ -194,7 +195,6 @@ class TestLondonCreator:
         assert prepop_londoncreator.london.get_station(6)._common_name.startswith('Broadcasting House')
 
     def test_populate_station_demand_dicts(self, prepop_londoncreator):
-        prepop_londoncreator.populate_station_demand_dicts()
         assert prepop_londoncreator.london.get_station(6)._demand_dict[0] > 0
         demand_at_midnight = prepop_londoncreator.london.get_station(6)._demand_dict[0]
         demand_at_8 = prepop_londoncreator.london.get_station(6)._demand_dict[480]
@@ -203,7 +203,6 @@ class TestLondonCreator:
         assert kingsx_at_8 > demand_at_8
 
     def test_populate_station_destination_dicts(self, prepop_londoncreator):
-        prepop_londoncreator.populate_station_destination_dicts()
         i = prepop_londoncreator.london.get_station(98)._dest_dict[240]
         # at 8am, there were 192 journeys from station 98 to 393 in the standard 2015 period
         assert i['volumes'][i['destinations'].index(393)] == 192
