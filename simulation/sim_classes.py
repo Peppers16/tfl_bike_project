@@ -1,4 +1,4 @@
-from random import randint, choice
+from random import randint, choice, choices
 import sqlite3
 import numpy.random
 
@@ -104,6 +104,36 @@ class LondonCreator:
             bikepoint_id, interval, journeys_p_minute = row
             if bikepoint_id in self.london._stations:
                 self.london.get_station(bikepoint_id)._demand_dict[interval] = journeys_p_minute
+
+    def populate_station_destination_dicts(self):
+        # No Laplace smoothing
+        print(f"fetching distribution of destinations per {self.minute_interval} minute interval, per station")
+        all_dests = self.select_query_db(
+            f"""
+            SELECT
+                "StartStation Id"
+                ,"EndStation Id"
+                ,(minute_of_day / {self.minute_interval}) * {self.minute_interval} AS interval
+                ,COUNT(*) AS journeys
+            FROM
+                journeys
+            WHERE
+                year >= {self.min_year}
+                AND weekday = 1
+                {self.additional_filters}
+            GROUP BY
+                1,2,3"""
+        )
+        print("fetched. Assigning to stations")
+        for row in all_dests:
+            bikepoint_id, destination_id, interval, journeys = row
+            if bikepoint_id in self.london._stations:
+                if destination_id in self.london._stations:
+                    self.london.get_station(bikepoint_id).add_dest_volume_parameter(
+                        interval=interval
+                        , destination_id=destination_id
+                        , journeys=journeys
+                    )
 
 
 class City:
@@ -229,7 +259,7 @@ class City:
 
 
 class Station:
-    def __init__(self, capacity=None, docked_init=None, st_id=None, demand_dict=None):
+    def __init__(self, capacity=None, docked_init=None, st_id=None, demand_dict=None, dest_dict=None):
         """
         A Station that can receive or release bikes, e.g. bikepoint or depot.
         capacity: total number of docks.
@@ -249,10 +279,16 @@ class Station:
         self._docked = docked_init
         self._id = st_id
         self._city = None
+        # Journey demand simulation parameters
         if demand_dict:
             self._demand_dict = demand_dict
         else:
             self._demand_dict = dict()
+
+        if dest_dict:
+            self._dest_dict = dest_dict
+        else:
+            self._dest_dict = {}
 
     def is_empty(self):
         return self._docked == 0
@@ -297,10 +333,27 @@ class Station:
         n_journeys = numpy.random.poisson(lam=demand_p_min*elapsing)
 
         for i in range(n_journeys):
-            destination = choice(list(self._city._stations.values()))
+            if interval in self._dest_dict:
+                # destinations sampled from multinomial distribution based on previous destinations at this interval
+                dest_id = choices(
+                    population=self._dest_dict[interval]['destinations']
+                    , weights=self._dest_dict[interval]['volumes']
+                    , k=1
+                )[0]
+                destination = self._city.get_station(dest_id)
+            else:
+                print(f"Warning: Station {self._id} was asked to generate unprecedented demand for interval {interval}")
+                destination = choice(list(self._city._stations.values()))
             duration = randint(1, 5)
             journey_demand.append((self, destination, duration))
         return journey_demand
+
+    def add_dest_volume_parameter(self, interval, destination_id, journeys):
+        if interval not in self._dest_dict:
+            self._dest_dict[interval] = {'destinations': [], 'volumes': []}
+        interval_entry = self._dest_dict[interval]
+        interval_entry['destinations'].append(destination_id)
+        interval_entry['volumes'].append(journeys)
 
 
 class Agent:

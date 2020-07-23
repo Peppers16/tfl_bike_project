@@ -10,9 +10,10 @@ def basic_city():
     """Basic city with two stations in it"""
     c = City()
     dummy_demand_dict = {0: 5}
-    s = Station(16, 8, st_id=0, demand_dict=dummy_demand_dict)
+    dummy_dest_dict = {0: {'destinations': [0, 1], 'volumes': [3, 7]}}
+    s = Station(16, 8, st_id=0, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict)
     c.add_station(s)
-    c.add_station(Station(16, 8, st_id=1, demand_dict=dummy_demand_dict))
+    c.add_station(Station(16, 8, st_id=1, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict))
     return c
 
 
@@ -168,8 +169,14 @@ class TestStation:
     def test_generate_demand(self, basic_city):
         seed(16)
         trial_station = basic_city.get_station(0)
-        demand = trial_station.decide_journey_demand(interval=0, elapsing=1)
+        demand = trial_station.decide_journey_demand(interval=0, elapsing=10)
         assert len(demand) > 0
+        picked_destinations = [d[1] for d in demand]
+        # the dummy distribution put station 1 as roughly twice as likely as station 0
+        n_1_picked = picked_destinations.count(basic_city.get_station(1))
+        n_0_picked = len(picked_destinations) - n_1_picked
+        # assert that station 1 was picked more often
+        assert 0 < n_0_picked < n_1_picked < len(picked_destinations)
 
 @pytest.fixture
 def prepop_londoncreator():
@@ -194,3 +201,9 @@ class TestLondonCreator:
         assert demand_at_8 > demand_at_midnight
         kingsx_at_8 = prepop_londoncreator.london.get_station(14)._demand_dict[480]
         assert kingsx_at_8 > demand_at_8
+
+    def test_populate_station_destination_dicts(self, prepop_londoncreator):
+        prepop_londoncreator.populate_station_destination_dicts()
+        i = prepop_londoncreator.london.get_station(98)._dest_dict[240]
+        # at 8am, there were 192 journeys from station 98 to 393 in the standard 2015 period
+        assert i['volumes'][i['destinations'].index(393)] == 192
