@@ -1,7 +1,10 @@
 from random import randint, choice, choices
 import sqlite3
 import numpy.random
+from numpy import isnan
 import pickle
+from pandas import read_sql
+from scipy.stats import gumbel_r
 
 
 class LondonCreator:
@@ -31,6 +34,15 @@ class LondonCreator:
         rows = c.fetchall()
         db.close()
         return rows
+
+    def df_from_sql(self, query):
+        dbpath = "data/bike_db.db"
+        db = sqlite3.connect(dbpath)
+        try:
+            df = read_sql(query, db)
+        finally:
+            db.close()
+        return df
 
     def populate_tfl_stations(self):
         """
@@ -136,11 +148,40 @@ class LondonCreator:
                         , journeys=journeys
                     )
 
+    def populate_station_duration_params(self):
+        # This is intensive so populates one origin station at a time
+        for start_id in self.london._stations.keys():
+            print(f"fetching past journeys from station {start_id}")
+            journey_df = self.df_from_sql(
+                f"""
+                SELECT
+                    "EndStation Id"
+                    ,Duration / 60 AS Duration
+                FROM
+                    journeys
+                WHERE
+                    "StartStation Id" = {start_id}
+                    AND year >= {self.min_year}
+                    AND weekday = 1
+                    {self.additional_filters}
+                """
+            )
+            for end_id in journey_df["EndStation Id"].unique():
+                durations = journey_df.loc[journey_df["EndStation Id"] == end_id]['Duration']
+                durations = [x for x in durations if not isnan(x)]
+                # creates a scipy.stats.gumber_r object
+                dist = gumbel_r(*gumbel_r.fit(durations))
+                # add the distribution object to the duration dict
+                self.london.get_station(start_id).add_dest_duration_distribution(
+                    destination_id=end_id
+                    , stat_distribution=dist)
+
     def create_london_from_scratch(self):
         print("Creating City using fresh data pulls")
         self.populate_tfl_stations()
         self.populate_station_demand_dicts()
         self.populate_station_destination_dicts()
+        self.populate_station_duration_params()
         print("Done!")
         print(".london attribute has been populated using fresh SQL pulls")
 
@@ -157,7 +198,6 @@ class LondonCreator:
         print(f".london attribute has been loaded from {in_dir}")
         if not self.london._stations:
             print("Warning. No stations in loaded city")
-
 
 
 class City:
@@ -283,7 +323,7 @@ class City:
 
 
 class Station:
-    def __init__(self, capacity=None, docked_init=None, st_id=None, demand_dict=None, dest_dict=None):
+    def __init__(self, capacity=None, docked_init=None, st_id=None, demand_dict=None, dest_dict=None, duration_dict=None):
         """
         A Station that can receive or release bikes, e.g. bikepoint or depot.
         capacity: total number of docks.
@@ -313,6 +353,11 @@ class Station:
             self._dest_dict = dest_dict
         else:
             self._dest_dict = {}
+
+        if duration_dict:
+            self._duration_dict = duration_dict
+        else:
+            self._duration_dict = {}
 
     def is_empty(self):
         return self._docked == 0
@@ -378,6 +423,9 @@ class Station:
         interval_entry = self._dest_dict[interval]
         interval_entry['destinations'].append(destination_id)
         interval_entry['volumes'].append(journeys)
+
+    def add_dest_duration_distribution(self, destination_id, stat_distribution):
+        self._duration_dict[destination_id] = stat_distribution
 
 
 class Agent:

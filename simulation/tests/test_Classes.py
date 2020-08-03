@@ -206,3 +206,6 @@ class TestLondonCreator:
         i = prepop_londoncreator.london.get_station(98)._dest_dict[240]
         # at 8am, there were 192 journeys from station 98 to 393 in the standard 2015 period
         assert i['volumes'][i['destinations'].index(393)] == 192
+
+    def test_populate_station_duration_params(self, prepop_londoncreator):
+        prepop_londoncreator.populate_station_duration_params()
