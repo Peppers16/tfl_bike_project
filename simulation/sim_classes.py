@@ -9,7 +9,8 @@ import time
 
 
 class LondonCreator:
-    def __init__(self, min_year=2015, minute_interval=20, exclude_covid=True, additional_filters=""""""):
+    def __init__(self, min_year=2015, minute_interval=20, exclude_covid=True
+                 , additional_sql_filters=""""""):
         """
         Creates a city that emulates the true London BBS, including its stations.
 
@@ -23,9 +24,9 @@ class LondonCreator:
         self.london = City(interval_size=minute_interval)
         self.min_year = min_year
         self.minute_interval = minute_interval
-        self.additional_filters = additional_filters
+        self.additional_filters = additional_sql_filters
         if exclude_covid:
-            self.additional_filters = additional_filters + """ AND "Start Date" <= '2020-03-15'"""
+            self.additional_filters = additional_sql_filters + """ AND "Start Date" <= '2020-03-15'"""
 
     def select_query_db(self, query):
         dbpath = "data/bike_db.db"

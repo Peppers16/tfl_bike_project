@@ -2,7 +2,14 @@ import pytest
 from random import seed
 from math import isclose
 from ..sim_classes import City, Station, LondonCreator
+import os.path
 
+# A small version of London is pre-populated for some testing
+test_london_location = 'simulation/tests/files/test_london.pickle'
+if not os.path.exists(test_london_location):
+    import simulation.pre_populate_test_london
+    print(f"file not found: {test_london_location}. Executing script to create it...")
+    simulation.pre_populate_test_london.main()
 
 # pytest fixtures define a class instance that can be re-used for various tests, by passing it as an argument
 @pytest.fixture
@@ -27,7 +34,7 @@ def nrly_empty_stn():
 @pytest.fixture
 def prepop_londoncreator():
     lc = LondonCreator()
-    lc.load_pickled_city('simulation/tests/files/test2.pickle')
+    lc.load_pickled_city(test_london_location)
     return lc
 
 
@@ -207,4 +214,12 @@ class TestLondonCreator:
         i = prepop_londoncreator.london.get_station(98)._dest_dict[240]
         # at 8am, there were 192 journeys from station 98 to 393 in the standard 2015 period
         assert i['volumes'][i['destinations'].index(393)] == 192
+
+    def test_elapse_time(self, prepop_londoncreator):
+        seed(16)
+        prepop_londoncreator.london.main_elapse_time(1)
+        assert len(prepop_londoncreator.london._finished_journeys) == 0
+        for i in range(60*24):
+            prepop_londoncreator.london.main_elapse_time(1)
+        assert len(prepop_londoncreator.london._finished_journeys) > 0
 
