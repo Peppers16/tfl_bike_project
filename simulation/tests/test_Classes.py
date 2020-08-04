@@ -193,6 +193,10 @@ class TestStation:
         # assert that station 1 was picked more often
         assert 0 < n_0_picked < n_1_picked < len(picked_destinations)
 
+    def test_distance_from(self, basic_city):
+        # TODO
+        pass
+
 
 class TestLondonCreator:
     def test_populate_stations(self, prepop_londoncreator):
@@ -223,3 +227,17 @@ class TestLondonCreator:
             prepop_londoncreator.london.main_elapse_time(1)
         assert len(prepop_londoncreator.london._finished_journeys) > 0
 
+    def test_next_desination(self, prepop_londoncreator):
+        london = prepop_londoncreator.london
+        london.generate_journey(
+            start_st=london.get_station(14)
+            ,dest_st=london.get_station(98)
+            ,duration=1)
+        original_dest = london.get_station(98)
+        original_dest._docked = original_dest._capacity
+        london.main_elapse_time(1)
+        new_dest = london._agents[0]._current_destination
+        assert new_dest != original_dest
+        for st in london._stations.values():
+            if st != original_dest and st != new_dest:
+                assert st.distance_from(original_dest) > new_dest.distance_from(original_dest)

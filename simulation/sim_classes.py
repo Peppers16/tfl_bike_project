@@ -6,6 +6,7 @@ import pickle
 from pandas import read_sql
 from scipy.stats import gumbel_r
 import time
+from math import sqrt
 
 
 class LondonCreator:
@@ -344,6 +345,8 @@ class Station:
         self._docked = docked_init
         self._id = st_id
         self._city = None
+        self._latitude = 0
+        self._longitude = 0
         # Journey demand simulation parameters
         if demand_dict:
             self._demand_dict = demand_dict
@@ -434,6 +437,14 @@ class Station:
     def add_dest_duration_params(self, destination_id, params):
         self._duration_dict[destination_id] = params
 
+    def distance_from(self, other):
+        """Give distance of self from other based on co-ordinates
+        Technically, Euclidean distance is not a perfect measure of distance between co-ordinates due to projection
+        of Earth's surface. But this inaccuracy can be ignored since we are just finding closest stations within a
+        relatively tiny area"""
+        dist = sqrt((self._latitude - other._latitude)**2 + (self._longitude - other._longitude)**2)
+        return dist
+
 
 class Agent:
     def __init__(self, city: City, destination: Station, duration: int):
@@ -451,11 +462,15 @@ class Agent:
         pass
 
     def determine_next_destination(self):
-        # TODO: ASSIGN NEW STATION TO self._current_destination
         candidates = [st for st in self._city._stations.values() if not st.is_full()]
-        duration = randint(1, 5)
-        self._current_destination = choice(candidates)
-        self._remaining_duration = duration
+        candidates.sort(
+            key=lambda x: x.distance_from(self._current_destination)
+        )
+        new_destination = candidates[0]
+        # TODO: There is a small risk of asking for an unprecedented duration here
+        new_duration = round(gumbel_r(*self._current_destination._duration_dict[new_destination.get_id()]).rvs(1)[0])
+        self._current_destination = new_destination
+        self._remaining_duration = new_duration
         self.need_new_destination = False
 
     def arrival(self):
