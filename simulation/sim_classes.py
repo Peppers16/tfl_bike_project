@@ -5,6 +5,7 @@ from numpy import isnan
 import pickle
 from pandas import read_sql
 from scipy.stats import gumbel_r
+import time
 
 
 class LondonCreator:
@@ -151,7 +152,7 @@ class LondonCreator:
     def populate_station_duration_params(self):
         # This is intensive so populates one origin station at a time
         for start_id in self.london._stations.keys():
-            print(f"fetching past journeys from station {start_id}")
+            start_time = time.time()
             journey_df = self.df_from_sql(
                 f"""
                 SELECT
@@ -166,15 +167,14 @@ class LondonCreator:
                     {self.additional_filters}
                 """
             )
+            print(f"fetched {len(journey_df)} journeys for station {start_id} in {(time.time()-start_time)/60} minutes")
+            journey_df.dropna(subset=['Duration'], inplace=True)
             for end_id in journey_df["EndStation Id"].unique():
-                durations = journey_df.loc[journey_df["EndStation Id"] == end_id]['Duration']
-                durations = [x for x in durations if not isnan(x)]
-                # creates a scipy.stats.gumber_r object
-                dist = gumbel_r(*gumbel_r.fit(durations))
-                # add the distribution object to the duration dict
-                self.london.get_station(start_id).add_dest_duration_distribution(
-                    destination_id=end_id
-                    , stat_distribution=dist)
+                durations = journey_df.loc[journey_df["EndStation Id"] == end_id]['Duration'].values
+                # creates a tuple of scipy.stats.gumbel_r parameters
+                params = gumbel_r.fit(durations)
+                # add the distribution parameters to the duration dict
+                self.london.get_station(start_id).add_dest_duration_params(destination_id=end_id, params=params)
 
     def create_london_from_scratch(self):
         print("Creating City using fresh data pulls")
@@ -413,7 +413,13 @@ class Station:
             else:
                 print(f"Warning: Station {self._id} was asked to generate unprecedented demand for interval {interval}")
                 destination = choice(list(self._city._stations.values()))
-            duration = randint(1, 5)
+                dest_id = destination.get_id()
+            # decide duration using gumbel_r distribution
+            if dest_id in self._duration_dict:
+                duration = round(gumbel_r(*self._duration_dict[dest_id]).rvs(1))
+            else:
+                print(f"Warning: Station {self._id} was asked to generate unprecedented duration for destination {dest_id}")
+                duration = round(gumbel_r(*choice(self._duration_dict.values())).rvs(1))
             journey_demand.append((self, destination, duration))
         return journey_demand
 
@@ -424,8 +430,8 @@ class Station:
         interval_entry['destinations'].append(destination_id)
         interval_entry['volumes'].append(journeys)
 
-    def add_dest_duration_distribution(self, destination_id, stat_distribution):
-        self._duration_dict[destination_id] = stat_distribution
+    def add_dest_duration_params(self, destination_id, params):
+        self._duration_dict[destination_id] = params
 
 
 class Agent:
