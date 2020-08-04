@@ -11,9 +11,10 @@ def basic_city():
     c = City()
     dummy_demand_dict = {0: 5}
     dummy_dest_dict = {0: {'destinations': [0, 1], 'volumes': [3, 7]}}
-    s = Station(16, 8, st_id=0, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict)
+    dummy_duration_dict = {0: (1, 16), 1: (1, 16)}
+    s = Station(16, 8, st_id=0, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict, duration_dict=dummy_duration_dict)
     c.add_station(s)
-    c.add_station(Station(16, 8, st_id=1, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict))
+    c.add_station(Station(16, 8, st_id=1, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict, duration_dict=dummy_duration_dict))
     return c
 
 
@@ -26,7 +27,7 @@ def nrly_empty_stn():
 @pytest.fixture
 def prepop_londoncreator():
     lc = LondonCreator()
-    lc.load_pickled_city('simulation/tests/files/london.pickle')
+    lc.load_pickled_city('simulation/tests/files/test2.pickle')
     return lc
 
 
@@ -207,5 +208,3 @@ class TestLondonCreator:
         # at 8am, there were 192 journeys from station 98 to 393 in the standard 2015 period
         assert i['volumes'][i['destinations'].index(393)] == 192
 
-    def test_populate_station_duration_params(self, prepop_londoncreator):
-        prepop_londoncreator.populate_station_duration_params()

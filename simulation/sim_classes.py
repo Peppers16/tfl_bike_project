@@ -416,10 +416,10 @@ class Station:
                 dest_id = destination.get_id()
             # decide duration using gumbel_r distribution
             if dest_id in self._duration_dict:
-                duration = round(gumbel_r(*self._duration_dict[dest_id]).rvs(1))
+                duration = round(gumbel_r(*self._duration_dict[dest_id]).rvs(1)[0])
             else:
                 print(f"Warning: Station {self._id} was asked to generate unprecedented duration for destination {dest_id}")
-                duration = round(gumbel_r(*choice(self._duration_dict.values())).rvs(1))
+                duration = round(gumbel_r(*choice(self._duration_dict.values())).rvs(1)[0])
             journey_demand.append((self, destination, duration))
         return journey_demand
 
