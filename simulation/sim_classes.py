@@ -395,7 +395,6 @@ class Station:
 
         It returns a list of (self, dest_st, duration) tuples.
         """
-        # TODO: Replace Dummy logic with realistic demand. Right now station picks random destination, possibly itself
         journey_demand = []
         # check station's demand per minute during this time interval (e.g. 20-40th minute)
         if interval in self._demand_dict:
@@ -424,6 +423,7 @@ class Station:
             else:
                 print(f"Warning: Station {self._id} was asked to generate unprecedented duration for destination {dest_id}")
                 duration = round(gumbel_r(*choice(self._duration_dict.values())).rvs(1)[0])
+            duration = max(duration, 1)
             journey_demand.append((self, destination, duration))
         return journey_demand
 
@@ -469,6 +469,7 @@ class Agent:
         new_destination = candidates[0]
         # TODO: There is a small risk of asking for an unprecedented duration here
         new_duration = round(gumbel_r(*self._current_destination._duration_dict[new_destination.get_id()]).rvs(1)[0])
+        new_duration = max(new_duration, 1)
         self._current_destination = new_destination
         self._remaining_duration = new_duration
         self.need_new_destination = False

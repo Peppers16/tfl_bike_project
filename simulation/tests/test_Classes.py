@@ -7,9 +7,9 @@ import os.path
 # A small version of London is pre-populated for some testing
 test_london_location = 'simulation/tests/files/test_london.pickle'
 if not os.path.exists(test_london_location):
-    import simulation.pre_populate_test_london
+    import simulation.tests.pre_populate_test_london
     print(f"file not found: {test_london_location}. Executing script to create it...")
-    simulation.pre_populate_test_london.main()
+    simulation.tests.pre_populate_test_london.main()
 
 # pytest fixtures define a class instance that can be re-used for various tests, by passing it as an argument
 @pytest.fixture
@@ -18,7 +18,7 @@ def basic_city():
     c = City()
     dummy_demand_dict = {0: 5}
     dummy_dest_dict = {0: {'destinations': [0, 1], 'volumes': [3, 7]}}
-    dummy_duration_dict = {0: (1, 16), 1: (1, 16)}
+    dummy_duration_dict = {0: (6.12, 2.05), 1: (5.11, 1.85)}
     s = Station(16, 8, st_id=0, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict, duration_dict=dummy_duration_dict)
     c.add_station(s)
     c.add_station(Station(16, 8, st_id=1, demand_dict=dummy_demand_dict, dest_dict=dummy_dest_dict, duration_dict=dummy_duration_dict))
@@ -133,9 +133,9 @@ class TestCity:
         seed(16)
         basic_city.main_elapse_time(1)
         assert len(basic_city._agents) > 0
-        basic_city.main_elapse_time(3)
+        basic_city.main_elapse_time(60)
         assert len(basic_city._finished_journeys) > 0
-        assert basic_city._time == 4
+        assert basic_city._time == 61
 
     def test_user_next_destination(self, basic_city):
         basic_city.get_station(1)._docked = 16
