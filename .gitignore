@@ -1,5 +1,5 @@
 apiCredentials.txt
-data/*
+tfl_project/data/*
 googleCredentials.json
 token.pickle
 workspace.xml
