@@ -1,7 +1,8 @@
 import pytest
 from random import seed
 from math import isclose
-from tfl_project.simulation.sim_classes import City, Station, LondonCreator
+from tfl_project.simulation.sim_classes import City, Station
+from tfl_project.simulation.sim_managment import LondonCreator
 import os.path
 
 # A small version of London is pre-populated for some testing
@@ -63,8 +64,8 @@ class TestCity:
         assert len(basic_city._agents) == 0
         assert basic_city._stations[0]._docked == 7
         assert basic_city._stations[1]._docked == 9
-        assert len(basic_city._finished_journeys) == 1
-        assert len(basic_city._failed_ends) == 0
+        assert basic_city._event_log['totals']['finished_journeys'] == 1
+        assert basic_city._event_log['totals']['failed_ends'] == 0
 
     def test_two_journeys(self, basic_city):
         # two arriving at same time
@@ -83,8 +84,8 @@ class TestCity:
         assert basic_city.get_station(0)._docked == 6
         assert basic_city.get_station(1)._docked == 10
         assert len(basic_city._agents) == 0
-        assert len(basic_city._finished_journeys) == 2
-        assert len(basic_city._failed_ends) == 0
+        assert basic_city._event_log['totals']['finished_journeys'] == 2
+        assert basic_city._event_log['totals']['failed_ends'] == 0
 
     def test_two_at_full(self, basic_city):
         basic_city.get_station(1)._docked = 15
@@ -99,8 +100,8 @@ class TestCity:
         basic_city.move_agents(1)
         assert basic_city.get_station(1)._docked == 16
         assert len(basic_city._agents) == 1
-        assert len(basic_city._finished_journeys) == 1
-        assert len(basic_city._failed_ends) == 1
+        assert basic_city._event_log['totals']['finished_journeys'] == 1
+        assert basic_city._event_log['totals']['failed_ends'] == 1
 
     def test_failed_end(self, basic_city):
         basic_city.get_station(1)._docked = 16
@@ -113,9 +114,8 @@ class TestCity:
         basic_city.move_agents(3)
         assert basic_city.get_station(1)._docked == 16
         assert len(basic_city._agents) == 1
-        assert len(basic_city._finished_journeys) == 0
-        assert len(basic_city._failed_ends) == 1
-        # TODO: Actually handle and test new destination logic
+        assert basic_city._event_log['totals']['finished_journeys'] == 0
+        assert basic_city._event_log['totals']['failed_ends'] == 1
 
     def test_failed_start(self, basic_city):
         basic_city.get_station(0)._docked = 0
@@ -124,9 +124,9 @@ class TestCity:
             ,dest_st=basic_city.get_station(1)
             ,duration=3)
         assert len(basic_city._agents) == 0
-        assert len(basic_city._finished_journeys) == 0
-        assert len(basic_city._failed_ends) == 0
-        assert len(basic_city._failed_starts) == 1
+        assert basic_city._event_log['totals']['finished_journeys'] == 0
+        assert basic_city._event_log['totals']['failed_ends'] == 0
+        assert basic_city._event_log['totals']['failed_starts'] == 1
 
     def test_main_elapse_time(self, basic_city):
         """important test: includes a lot of simulation logic"""
@@ -134,7 +134,7 @@ class TestCity:
         basic_city.main_elapse_time(1)
         assert len(basic_city._agents) > 0
         basic_city.main_elapse_time(60)
-        assert len(basic_city._finished_journeys) > 0
+        assert basic_city._event_log['totals']['finished_journeys'] > 0
         assert basic_city._time == 61
 
     def test_user_next_destination(self, basic_city):
@@ -148,7 +148,7 @@ class TestCity:
 
         basic_city.move_agents(3)
         assert user.need_new_destination
-        assert len(basic_city._failed_ends) == 1
+        assert basic_city._event_log['totals']['failed_ends'] == 1
 
         basic_city.call_for_new_destinations()
         assert user._current_destination == basic_city.get_station(0)
@@ -222,10 +222,21 @@ class TestLondonCreator:
     def test_elapse_time(self, prepop_londoncreator):
         seed(16)
         prepop_londoncreator.london.main_elapse_time(1)
-        assert len(prepop_londoncreator.london._finished_journeys) == 0
+        assert prepop_londoncreator.london._event_log['totals']['finished_journeys'] == 0
         for i in range(60*24):
             prepop_londoncreator.london.main_elapse_time(1)
-        assert len(prepop_londoncreator.london._finished_journeys) > 0
+        assert prepop_londoncreator.london._event_log['totals']['finished_journeys'] > 0
+
+    def test_event_log(self, prepop_londoncreator):
+        log = prepop_londoncreator.london._event_log
+        seed(16)
+        assert log['totals']['finished_journeys'] == 0
+        for i in range(60*24):
+            prepop_londoncreator.london.main_elapse_time(1)
+        assert log['totals']['finished_journeys'] > 0
+        assert log['totals']['finished_journeys'] == sum(log['time_series']['finished_journeys'])
+        assert log['totals']['failed_starts'] == sum(log['time_series']['failed_starts'])
+        assert log['totals']['failed_ends'] == sum(log['time_series']['failed_ends'])
 
     def test_next_desination(self, prepop_londoncreator):
         london = prepop_londoncreator.london

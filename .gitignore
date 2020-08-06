@@ -9,3 +9,4 @@ cycle_journeys - Shortcut
 .pytest_cache
 .ipynb_checkpoints/
 cycling.data.tfl.gov.uk_files/
+tfl_project/simulation/tests/files/test_london.pickle

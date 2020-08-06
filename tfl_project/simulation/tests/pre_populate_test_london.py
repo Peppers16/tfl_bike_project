@@ -1,10 +1,11 @@
+import tfl_project.simulation.sim_managment
 from tfl_project.simulation import sim_classes
 
 st_filter = """AND "StartStation Id" IN (1, 6, 14, 98, 393)
                 AND "EndStation Id" IN (1, 6, 14, 98, 393)"""
 
 def main():
-    lc = sim_classes.LondonCreator(
+    lc = tfl_project.simulation.sim_managment.LondonCreator(
         additional_sql_filters=st_filter
     )
     lc.populate_tfl_stations()
