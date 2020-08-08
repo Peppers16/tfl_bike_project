@@ -288,8 +288,11 @@ class TestSimulationManager:
             , simulation_id='TESTSIM'
         )
         sm.run_simulations()
-        sm.output_df_to_csv()
+        sm.output_df_to_csv(sm.combined_timeseries_df, 'timeseries')
         test_dir = 'data/simulation_outputs/TESTSIM'
-        assert os.path.exists(test_dir + '/event_timeseries.csv')
-        os.remove(test_dir + '/event_timeseries.csv')
+        assert os.path.exists(test_dir + '/timeseries.csv')
+        os.remove(test_dir + '/timeseries.csv')
+        sm.output_df_to_csv(sm.combined_event_df, 'events')
+        assert os.path.exists(test_dir + '/events.csv')
+        os.remove(test_dir + '/events.csv')
         os.rmdir(test_dir)

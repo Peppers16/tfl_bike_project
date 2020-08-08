@@ -243,8 +243,9 @@ class SimulationManager:
 
     def output_df_to_csv(self, df, descriptor=''):
         output_dir = 'data/simulation_outputs/' + self.simulation_id + '/'
-        os.mkdir(output_dir)
-        self.combined_timeseries_df.to_csv(output_dir + 'event_timeseries.csv', index=False)
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
+        df.to_csv(output_dir + descriptor + '.csv', index=False)
 
 
 
