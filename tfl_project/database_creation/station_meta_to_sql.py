@@ -11,10 +11,11 @@ from numpy import isnan
 
 import tfl_project.tfl_api_logger.bikeStationStatus as bikeStationStatus
 
+DBPATH = "data/bike_db.db"
+
 
 def main():
     # connect to sqlite database
-    DBPATH = "data/bike_db.db"
     db = sqlite3.connect(DBPATH)
 
     # Bikepoint Station Data
@@ -95,10 +96,8 @@ def main():
                 bp_summaries.loc[found_id,'median_capacity'] = [p['value'] for p in station['additionalProperties'] if p['key'] == 'NbDocks'][0]
                 bp_summaries.loc[found_id,'max_capacity'] = [p['value'] for p in station['additionalProperties'] if p['key'] == 'NbDocks'][0]
 
-
-    # We are now left with 5 missing stations. Manual inspection suggests these have all been closed / inactive in recent
-    # months.
-    # Question is: how to get their location...?
+    # We are now left with 5 missing stations. Manual inspection suggests these have all been closed / inactive in
+    # recent months. Question is: how to get their location...?
     #
     # Options:
     # * Impute a centroid co-ordinate
@@ -123,10 +122,40 @@ def main():
                         }
                         )
 
-
     db.execute("""
         CREATE UNIQUE INDEX "meta_id" ON "station_metadata" ("bikepoint_id");
     """)
 
     db.close()
     print('done')
+
+
+def add_avg_5am_docked(pre_covid=True):
+    extra_where = ""
+    if pre_covid:
+        extra_where = "AND timestamp <= '2020-03-15'"
+    db = sqlite3.connect(DBPATH)
+    db.execute("ALTER TABLE station_metadata ADD COLUMN avg_5am_docked INTEGER;")
+    db.execute(f"""
+        WITH avg_5ams AS (
+            SELECT
+                bikepoint_id
+                ,CAST(ROUND(AVG(docked)) AS INTEGER) AS docked_5am
+            FROM 
+                station_fill
+            WHERE 
+                hour = 5
+                AND weekday = 1
+                AND TIME(timestamp) = '05:00:00'
+                {extra_where}
+            GROUP BY 1
+            ) 
+        
+        UPDATE station_metadata
+        SET avg_5am_docked = (
+            SELECT docked_5am
+            FROM avg_5ams
+            WHERE station_metadata.bikepoint_id = avg_5ams.bikepoint_id
+            )
+    ;""")
+    db.close()

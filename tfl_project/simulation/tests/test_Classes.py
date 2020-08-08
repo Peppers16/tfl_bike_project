@@ -277,6 +277,7 @@ class TestSimulationManager:
         )
         sm.run_simulations()
         sm.output_df_to_csv()
-        assert os.path.exists('data/simulation_outputs/TESTSIM/event_timeseries.csv')
-        os.remove('data/simulation_outputs/TESTSIM/event_timeseries.csv')
-        os.rmdir('data/simulation_outputs/TESTSIM')
+        test_dir = 'data/simulation_outputs/TESTSIM'
+        assert os.path.exists(test_dir + '/event_timeseries.csv')
+        os.remove(test_dir + '/event_timeseries.csv')
+        os.rmdir(test_dir)

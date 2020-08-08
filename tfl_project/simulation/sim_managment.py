@@ -50,9 +50,9 @@ class LondonCreator:
 
     def populate_tfl_stations(self):
         """
-        Takes the new city and adds stations to it which reflect the true TFL BSS.
-        Uses a SQLite table, station_metadata, which has already been prepared.
-        Adds additional attributes to stations: _latitude, _longitude, _common_name
+        Takes the new city and adds stations to it which reflect the true TFL BSS. Uses a SQLite table,
+        station_metadata, which has already been prepared. The initial number of docked bikes is set to a default
+        value equal to the mean 5-am number observed in the station_fill data pre-covid
         """
         print("fetching station metadata")
         rows = self.select_query_db(
@@ -62,16 +62,15 @@ class LondonCreator:
                 ,max_capacity AS capacity
                 ,common_name
                 ,latitude
-                ,longitude 
+                ,longitude
+                ,IFNULL(avg_5am_docked, 0)
             FROM station_metadata
             """
         )
         print("Populating stations")
         for row in rows:
-            # TODO: functionality to define the 'docked_init' attributes that we want.
-            #  it possible that the sqlite query will not be flexible enough for trying various simulations
             s = Station(capacity=row[1]
-                        , docked_init=row[1]//2
+                        , docked_init=row[5]
                         , st_id=row[0])
             s._latitude = row[3]
             s._longitude = row[4]

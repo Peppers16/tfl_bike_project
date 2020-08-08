@@ -9,4 +9,6 @@ if __name__ == '__main__':
     station_data_to_sql.main()
     print("Creating a station_metadata table")
     station_meta_to_sql.main()
+    print("Adding column for typical 5am bike allocation")
+    station_meta_to_sql.add_avg_5am_docked(pre_covid=True)
     print("Database creation complete.")
