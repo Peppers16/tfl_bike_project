@@ -4,6 +4,8 @@ import time
 from copy import deepcopy
 from pandas import read_sql
 from scipy.stats import gumbel_r
+from pandas import DataFrame
+import os
 
 from tfl_project.simulation.sim_classes import City, Station
 
@@ -202,20 +204,45 @@ class LondonCreator:
 
 
 class SimulationManager:
-    def __init__(self, city: City, n_simulations: int):
+    def __init__(self, city: City, n_simulations: int, simulation_id: str):
+        """
+        :param city: Pass a City instance which will undergo 24 simulation-hours, n times
+        :param n_simulations: Number of times to repeat the simulation.
+        :param simulation_id: A string which should uniquely identify this set of simulations.
+            The CSVs resulting from the simulation will be stored in tfl_project/data/simulation_outputs/<simulation_id>
+        """
         self.base_city = city
         self.n_simulations = n_simulations
+        self.simulation_id = simulation_id
+        self.combined_df = None
 
     def run_simulations(self):
         print("Begin simulations -------------------")
         for i in range(self.n_simulations):
+            print(f"Simulation {i} -----------")
             city_instance = deepcopy(self.base_city)
             for t in range(60*24):
                 # Each run simulates 24 hours, by minute
-                _ = city_instance.main_elapse_time(1)
+                city_instance.main_elapse_time(1)
                 if t % 60 == 0:
                     print(f"simulation: {i} \t hour: {t//60}")
+            event_df = city_instance.get_event_df()
+            self.append_to_combined_df(self.simulation_id, i, event_df)
         print(f"completed {self.n_simulations} simulations ")
         print("-------------------------------------")
+
+    def append_to_combined_df(self, simulation_id: str, sim_num: int, event_df: DataFrame):
+        event_df['simulation_id'] = simulation_id
+        event_df['sim_num'] = sim_num
+        if self.combined_df is None:
+            self.combined_df = event_df
+        else:
+            self.combined_df = self.combined_df.append(event_df.copy(), ignore_index=True)
+
+    def output_df_to_csv(self):
+        output_dir = 'data/simulation_outputs/' + self.simulation_id + '/'
+        os.mkdir(output_dir)
+        self.combined_df.to_csv(output_dir + 'event_timeseries.csv', index=False)
+
 
 

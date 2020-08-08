@@ -2,7 +2,7 @@ import pytest
 from random import seed
 from math import isclose
 from tfl_project.simulation.sim_classes import City, Station
-from tfl_project.simulation.sim_managment import LondonCreator
+from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager
 import os.path
 
 # A small version of London is pre-populated for some testing
@@ -237,6 +237,9 @@ class TestLondonCreator:
         assert log['totals']['finished_journeys'] == sum(log['time_series']['finished_journeys'])
         assert log['totals']['failed_starts'] == sum(log['time_series']['failed_starts'])
         assert log['totals']['failed_ends'] == sum(log['time_series']['failed_ends'])
+        df = prepop_londoncreator.london.get_event_df()
+        assert df.shape == (1440, 4)
+        assert sum(df['finished_journeys']) == log['totals']['finished_journeys']
 
     def test_next_desination(self, prepop_londoncreator):
         london = prepop_londoncreator.london
@@ -252,3 +255,28 @@ class TestLondonCreator:
         for st in london._stations.values():
             if st != original_dest and st != new_dest:
                 assert st.distance_from(original_dest) > new_dest.distance_from(original_dest)
+
+
+class TestSimulationManager:
+    def test_simulations(self, prepop_londoncreator):
+        sm = SimulationManager(
+            city=prepop_londoncreator.london
+            , n_simulations=2
+            , simulation_id='TESTSIM'
+        )
+        sm.run_simulations()
+        assert len(sm.combined_df) == 2880
+        assert 0 in sm.combined_df['sim_num']
+        assert 1 in sm.combined_df['sim_num']
+
+    def test_output_to_csv(self, prepop_londoncreator):
+        sm = SimulationManager(
+            city=prepop_londoncreator.london
+            , n_simulations=2
+            , simulation_id='TESTSIM'
+        )
+        sm.run_simulations()
+        sm.output_df_to_csv()
+        assert os.path.exists('data/simulation_outputs/TESTSIM/event_timeseries.csv')
+        os.remove('data/simulation_outputs/TESTSIM/event_timeseries.csv')
+        os.rmdir('data/simulation_outputs/TESTSIM')

@@ -2,6 +2,7 @@ from random import choice, choices
 import numpy.random
 from scipy.stats import gumbel_r
 from math import sqrt
+from pandas import DataFrame
 
 
 class City:
@@ -138,6 +139,11 @@ class City:
     def log_finished_journey(self):
         self._event_log['totals']['finished_journeys'] += 1
         self._event_log['time_series']['finished_journeys'][-1] += 1
+
+    def get_event_df(self):
+        df1 = DataFrame.from_dict(self._event_log['time_series'])
+        # df2 = DataFrame.from_dict(self._event_log['totals'])
+        return df1
 
 
 class Station:
