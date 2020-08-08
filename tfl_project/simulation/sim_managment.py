@@ -213,7 +213,8 @@ class SimulationManager:
         self.base_city = city
         self.n_simulations = n_simulations
         self.simulation_id = simulation_id
-        self.combined_df = None
+        self.combined_timeseries_df = None
+        self.combined_event_df = None
 
     def run_simulations(self):
         print("Begin simulations -------------------")
@@ -225,23 +226,25 @@ class SimulationManager:
                 city_instance.main_elapse_time(1)
                 if t % 60 == 0:
                     print(f"simulation: {i} \t hour: {t//60}")
-            event_df = city_instance.get_event_df()
-            self.append_to_combined_df(self.simulation_id, i, event_df)
+            # This feels clunky...
+            self.combined_timeseries_df = self.append_to_combined_df(self.combined_timeseries_df, self.simulation_id, i, city_instance.get_timeseries_df())
+            self.combined_event_df = self.append_to_combined_df(self.combined_event_df, self.simulation_id, i, city_instance.get_events_df())
         print(f"completed {self.n_simulations} simulations ")
         print("-------------------------------------")
 
-    def append_to_combined_df(self, simulation_id: str, sim_num: int, event_df: DataFrame):
-        event_df['simulation_id'] = simulation_id
-        event_df['sim_num'] = sim_num
-        if self.combined_df is None:
-            self.combined_df = event_df
+    def append_to_combined_df(self, combined_df: DataFrame, simulation_id: str, sim_num: int, instance_df: DataFrame):
+        instance_df['simulation_id'] = simulation_id
+        instance_df['sim_num'] = sim_num
+        if combined_df is None:
+            combined_df = instance_df
         else:
-            self.combined_df = self.combined_df.append(event_df.copy(), ignore_index=True)
+            combined_df = self.combined_timeseries_df.append(instance_df.copy(), ignore_index=True)
+        return combined_df
 
-    def output_df_to_csv(self):
+    def output_df_to_csv(self, df, descriptor=''):
         output_dir = 'data/simulation_outputs/' + self.simulation_id + '/'
         os.mkdir(output_dir)
-        self.combined_df.to_csv(output_dir + 'event_timeseries.csv', index=False)
+        self.combined_timeseries_df.to_csv(output_dir + 'event_timeseries.csv', index=False)
 
 
 

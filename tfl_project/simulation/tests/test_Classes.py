@@ -4,9 +4,12 @@ from math import isclose
 from tfl_project.simulation.sim_classes import City, Station
 from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager
 import os.path
+from os import remove
 
 # A small version of London is pre-populated for some testing
 test_london_location = 'simulation/tests/files/test_london.pickle'
+if os.path.exists(test_london_location):
+    remove(test_london_location)
 if not os.path.exists(test_london_location):
     import tfl_project.simulation.tests.pre_populate_test_london
     print(f"file not found: {test_london_location}. Executing script to create it...")
@@ -237,9 +240,17 @@ class TestLondonCreator:
         assert log['totals']['finished_journeys'] == sum(log['time_series']['finished_journeys'])
         assert log['totals']['failed_starts'] == sum(log['time_series']['failed_starts'])
         assert log['totals']['failed_ends'] == sum(log['time_series']['failed_ends'])
-        df = prepop_londoncreator.london.get_event_df()
+        assert len([e for e in log['events']['event'] if e == 'finished_journeys']) == log['totals']['finished_journeys']
+        assert len([e for e in log['events']['event'] if e == 'failed_starts']) == log['totals'][
+            'failed_starts']
+        assert len([e for e in log['events']['event'] if e == 'failed_ends']) == log['totals'][
+            'failed_ends']
+
+        df = prepop_londoncreator.london.get_timeseries_df()
         assert df.shape == (1440, 4)
         assert sum(df['finished_journeys']) == log['totals']['finished_journeys']
+        df2 = prepop_londoncreator.london.get_events_df()
+        assert len(df2) == len(log['events']['event'])
 
     def test_next_desination(self, prepop_londoncreator):
         london = prepop_londoncreator.london
@@ -265,9 +276,10 @@ class TestSimulationManager:
             , simulation_id='TESTSIM'
         )
         sm.run_simulations()
-        assert len(sm.combined_df) == 2880
-        assert 0 in sm.combined_df['sim_num']
-        assert 1 in sm.combined_df['sim_num']
+        assert len(sm.combined_timeseries_df) == 2880
+        assert 0 in sm.combined_timeseries_df['sim_num']
+        assert 1 in sm.combined_timeseries_df['sim_num']
+        assert len(sm.combined_event_df) > 0
 
     def test_output_to_csv(self, prepop_londoncreator):
         sm = SimulationManager(

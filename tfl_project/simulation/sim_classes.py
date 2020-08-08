@@ -23,16 +23,16 @@ class City:
         self._event_log = dict(
             time_series=dict(time=[0], failed_starts=[0], failed_ends=[0], finished_journeys=[0])
             , totals=dict(failed_starts=0, failed_ends=0, finished_journeys=0)
+            , events=dict(time=[], start_st=[], end_st=[], orig_start_st=[], orig_end_st=[], event=[])
         )
 
-    def event_log_append_t(self):
+    def timeseries_log_append_t(self):
         """the time_series component of the event long is a dictionary of lists, which will easily convert to a
         DataFrame. Each t period the list must be extended"""
         self._event_log['time_series']['time'].append(self._time)
         self._event_log['time_series']['failed_starts'].append(0)
         self._event_log['time_series']['failed_ends'].append(0)
         self._event_log['time_series']['finished_journeys'].append(0)
-
 
     def move_agents(self, t):
         """Existing agents proceed with their journeys, potentially arriving at their destination.
@@ -75,7 +75,7 @@ class City:
         actions.
         """
         if self._time != 0:
-            self.event_log_append_t()
+            self.timeseries_log_append_t()
         current_interval = (self._time // self._interval_size) * self._interval_size
         self.move_agents(t)
         self.request_demand(interval=current_interval, t=t)
@@ -100,9 +100,9 @@ class City:
         :return:
         """
         if start_st.is_empty():
-            self.log_failed_start()
+            self.log_failed_start(start_st=start_st, end_st=dest_st, orig_start_st=start_st, orig_end_st=dest_st)
         else:
-            u = User(self, dest_st, duration)
+            u = User(self, dest_st, duration, start_st=start_st)
             self._agents.append(u)
             u.undock_bike(start_st)
 
@@ -128,22 +128,30 @@ class City:
     def get_station(self, key):
         return self._stations[key]
 
-    def log_failed_end(self):
-        self._event_log['totals']['failed_ends'] += 1
-        self._event_log['time_series']['failed_ends'][-1] += 1
+    def log_event(self, event_key, start_st, end_st, orig_start_st, orig_end_st):
+        self._event_log['totals'][event_key] += 1
+        self._event_log['time_series'][event_key][-1] += 1
+        self._event_log['events']['time'].append(self._time)
+        self._event_log['events']['start_st'].append(start_st.get_id())
+        self._event_log['events']['end_st'].append(end_st.get_id())
+        self._event_log['events']['event'].append(event_key)
+        self._event_log['events']['orig_start_st'].append(orig_start_st.get_id())
+        self._event_log['events']['orig_end_st'].append(orig_end_st.get_id())
 
-    def log_failed_start(self):
-        self._event_log['totals']['failed_starts'] += 1
-        self._event_log['time_series']['failed_starts'][-1] += 1
+    def log_failed_end(self, start_st, end_st, orig_start_st, orig_end_st):
+        self.log_event('failed_ends', start_st, end_st, orig_start_st, orig_end_st)
 
-    def log_finished_journey(self):
-        self._event_log['totals']['finished_journeys'] += 1
-        self._event_log['time_series']['finished_journeys'][-1] += 1
+    def log_failed_start(self, start_st, end_st, orig_start_st, orig_end_st):
+        self.log_event('failed_starts', start_st, end_st, orig_start_st, orig_end_st)
 
-    def get_event_df(self):
-        df1 = DataFrame.from_dict(self._event_log['time_series'])
-        # df2 = DataFrame.from_dict(self._event_log['totals'])
-        return df1
+    def log_finished_journey(self, start_st, end_st, orig_start_st, orig_end_st):
+        self.log_event('finished_journeys', start_st, end_st, orig_start_st, orig_end_st)
+
+    def get_timeseries_df(self):
+        return DataFrame.from_dict(self._event_log['time_series'])
+
+    def get_events_df(self):
+        return DataFrame.from_dict(self._event_log['events'])
 
 
 class Station:
@@ -269,9 +277,10 @@ class Station:
 
 
 class Agent:
-    def __init__(self, city: City, destination: Station, duration: int):
+    def __init__(self, city: City, destination: Station, duration: int, start_st):
         """This is the parent class / interface for Users and Trucks"""
         self._current_destination = destination
+        self._last_departed_station = start_st
         self._remaining_duration = duration
         self._city = city
         self.finished = False
@@ -292,6 +301,7 @@ class Agent:
         # TODO: There is a small risk of asking for an unprecedented duration here
         new_duration = round(gumbel_r(*self._current_destination._duration_dict[new_destination.get_id()]).rvs(1)[0])
         new_duration = max(new_duration, 1)
+        self._last_departed_station = self._current_destination
         self._current_destination = new_destination
         self._remaining_duration = new_duration
         self.need_new_destination = False
@@ -307,19 +317,36 @@ class Agent:
 
 
 class User(Agent):
+
+    def __init__(self, city, destination, duration, start_st):
+        super().__init__(city, destination, duration, start_st)
+        # Users remember their original departures and destinations, even if they encounter full stations
+        self.original_start_st = start_st
+        self.original_end_st = destination
+
     def arrival(self):
         """Overrides arrival with User behaviour"""
         if self._current_destination.is_full():
-            self._city.log_failed_end()
+            self._city.log_failed_end(
+                start_st=self._last_departed_station
+                , end_st=self._current_destination
+                , orig_start_st=self.original_start_st
+                , orig_end_st=self.original_end_st
+            )
             self.need_new_destination = True
         else:
             self.dock_bike()
 
     def dock_bike(self):
-        """A user is removed after docking a bike sucessfully"""
+        """A user is removed after docking a bike successfully"""
         self._current_destination.take_bike()
         self.finished = True
-        self._city.log_finished_journey()
+        self._city.log_finished_journey(
+                start_st=self._last_departed_station
+                , end_st=self._current_destination
+                , orig_start_st=self.original_start_st
+                , orig_end_st=self.original_end_st
+            )
 
     def undock_bike(self, station: Station):
         station.give_bike()
