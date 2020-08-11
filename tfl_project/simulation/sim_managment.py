@@ -187,19 +187,35 @@ class LondonCreator:
         print("Done!")
         print(".london attribute has been populated using fresh SQL pulls")
 
-    def pickle_city(self, out_dir='london.pickle'):
+    def pickle_city(self, out_dir='simulation/files/london.pickle'):
         out_file = open(out_dir, 'wb')
         pickle.dump(self.london, out_file)
         out_file.close()
         print(f'City saved as {out_dir} for future use. Use load_pickled_city to use it again')
 
-    def load_pickled_city(self, in_dir='london.pickle'):
+    def load_pickled_city(self, in_dir='simulation/files/london.pickle'):
+        # This is a quick guard-rail against loading a pickled city when you have asked for non-default values
+        if self.min_year != 2015 or self.minute_interval != 20 or self.additional_filters != \
+                """ AND "Start Date" <= '2020-03-15'""":
+            raise NotImplementedError("Specified non-default LondonCreator parameters, but attempted to read from "
+                                      "existing london.pickle file")
         in_file = open(in_dir, 'rb')
         self.london = pickle.load(in_file)
         in_file.close()
         print(f".london attribute has been loaded from {in_dir}")
         if not self.london._stations:
             print("Warning. No stations in loaded city")
+
+    def get_or_create_london(self, pickle_file='simulation/files/london.pickle'):
+        try:
+            self.load_pickled_city(in_dir=pickle_file)
+        except FileNotFoundError:
+            print('existing pickled London not found: creating from scratch.')
+            self.create_london_from_scratch()
+            self.pickle_city(out_dir=pickle_file)
+        else:
+            raise
+        return self.london
 
 
 class SimulationManager:
@@ -247,5 +263,6 @@ class SimulationManager:
             os.mkdir(output_dir)
         df.to_csv(output_dir + descriptor + '.csv', index=False)
 
-
-
+    def output_dfs_to_csv(self):
+        self.output_df_to_csv(self.combined_timeseries_df, 'time_series')
+        self.output_df_to_csv(self.combined_event_df, 'events')
