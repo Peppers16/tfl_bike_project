@@ -157,31 +157,82 @@ class LondonCreator:
                         , journeys=journeys
                     )
 
-    def populate_station_duration_params(self):
+    def get_params_from_cache(self, station_id, cache_loc):
+        compatibility_json_loc = cache_loc / 'last_used_params.json'
+        st_params_loc = cache_loc / (str(station_id) + '.json')
+        if not self.parameter_json_is_compatible(compatibility_json_loc):
+            raise IncompatibleParamsError("Cached duration parameters made by incompatible LondonCreator instance.")
+        with open(st_params_loc) as infile:
+            d = json.load(infile)
+        # cast back into original format: json gets this a bit wrong
+        d = {int(k): tuple(v) for k, v in d.items()}
+        return d
+
+    def cache_station_params(self, station_id, dictionary, cache_loc):
+        json_file = str(station_id) + '.json'
+        self.check_prepare_cache(cache_loc)
+        # cast keys to vanilla python integer type, as opposed to numpy.int64
+        dictionary = {int(k): v for k, v in dictionary.items()}
+        with open(Path(cache_loc) / json_file, 'w') as f:
+            json.dump(dictionary, f)
+
+    def check_prepare_cache(self, cache_loc: Path):
+        """Checks the cache location either has:
+            - A compatible last_used_params.json
+            - or, no last_used_params.json, in which case it adds one."""
+        compatibility_json_loc = cache_loc / 'last_used_params.json'
+        if compatibility_json_loc.exists():
+            if not self.parameter_json_is_compatible(compatibility_json_loc):
+                raise IncompatibleParamsError("Tried to cache to a location with pre-existing parameters that are "
+                                              "incompatible")
+            else:
+                return
+        else:
+            # no compatibility_json present: write our own
+            self.dump_parameter_json(compatibility_json_loc)
+
+    def fetch_duration_params(self, start_id):
+        d = dict()
+        start_time = time.time()
+        journey_df = self.df_from_sql(
+            f"""
+            SELECT
+                "EndStation Id"
+                ,Duration / 60 AS Duration
+            FROM
+                journeys
+            WHERE
+                "StartStation Id" = {start_id}
+                AND year >= {self.min_year}
+                AND weekday = 1
+                {self.additional_filters}
+            """
+        )
+        print(f"fetched {len(journey_df)} journeys for station {start_id} in {(time.time()-start_time)/60} minutes")
+        journey_df.dropna(subset=['Duration'], inplace=True)
+        for end_id in journey_df["EndStation Id"].unique():
+            durations = journey_df.loc[journey_df["EndStation Id"] == end_id]['Duration'].values
+            # creates a tuple of scipy.stats.gumbel_r parameters
+            params = gumbel_r.fit(durations)
+            d[end_id] = params
+        return d
+
+    def populate_station_duration_params(self, cache_loc=Path('simulation/files/caches/duration_params')):
+        """This is the most intensive parametrization, taking about 2 hours.
+        Therefore, this method uses a 'cache' in addition to the existing .pickle_city functionality.
+        This means we can create new LondonCreator instances (e.g. after updating source code) more flexibly without
+        doing this step from scratch every time."""
         # This is intensive so populates one origin station at a time
         for start_id in self.london._stations.keys():
-            start_time = time.time()
-            journey_df = self.df_from_sql(
-                f"""
-                SELECT
-                    "EndStation Id"
-                    ,Duration / 60 AS Duration
-                FROM
-                    journeys
-                WHERE
-                    "StartStation Id" = {start_id}
-                    AND year >= {self.min_year}
-                    AND weekday = 1
-                    {self.additional_filters}
-                """
-            )
-            print(f"fetched {len(journey_df)} journeys for station {start_id} in {(time.time()-start_time)/60} minutes")
-            journey_df.dropna(subset=['Duration'], inplace=True)
-            for end_id in journey_df["EndStation Id"].unique():
-                durations = journey_df.loc[journey_df["EndStation Id"] == end_id]['Duration'].values
-                # creates a tuple of scipy.stats.gumbel_r parameters
-                params = gumbel_r.fit(durations)
-                # add the distribution parameters to the duration dict
+            try:
+                d = self.get_params_from_cache(start_id, cache_loc)
+            except FileNotFoundError:
+                d = self.fetch_duration_params(start_id)
+                self.cache_station_params(start_id, d, cache_loc)
+            except IncompatibleParamsError:
+                raise NotImplementedError("I need to decide how to handle this situation if it ever arises")
+            # add the distribution parameters to the duration dict
+            for end_id, params in d.items():
                 self.london.get_station(start_id).add_dest_duration_params(destination_id=end_id, params=params)
 
     def create_london_from_scratch(self):
@@ -229,19 +280,17 @@ class LondonCreator:
                     'Pass the location of either: a blank directory, or the location of a compatible pickled city.'
             print(error_string)
             raise
-        else:
-            raise
         return self.london
 
     def dump_parameter_json(self, out_f='simulation/files/last_used_params.json'):
         """This saves the current LondonCreator parameters to a JSON so that cached simulation parameters can be
         checked for 'compatibility' with future LondonCreator instances"""
-        d = vars(self)
+        d = vars(self).copy()  # careful not to delete the actual london attribute from self!
         del d['london']
         with open(Path(out_f), 'w') as outfile:
             json.dump(d, outfile)
 
-    def parameter_json_is_compatible(self, in_f='simulation/files/last_used_params.json'):
+    def parameter_json_is_compatible(self, in_f):
         """Checks attributes of this LondonCreator against a previously-saved parameter json and returns true if it
         has matching attributes """
         with open(Path(in_f)) as infile:

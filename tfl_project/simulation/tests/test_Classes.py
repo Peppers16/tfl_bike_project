@@ -6,6 +6,7 @@ from tfl_project.simulation.sim_managment import LondonCreator, SimulationManage
 import os.path
 from os import remove
 from pathlib import Path
+import json
 
 # A small version of London is pre-populated for some testing
 test_london_location = 'simulation/tests/files/'
@@ -282,6 +283,17 @@ class TestLondonCreator:
             prepop_londoncreator.load_pickled_city(test_london_location)
         with pytest.raises(IncompatibleParamsError):
             prepop_londoncreator.get_or_create_london(test_london_location)
+
+    def test_duration_cache(self, prepop_londoncreator):
+        path = Path('simulation/tests/files/caches/duration_params')
+        assert (path / '393.json').exists()
+        assert prepop_londoncreator.parameter_json_is_compatible(path / 'last_used_params.json')
+        prepop_londoncreator.min_year = 2016
+        with pytest.raises(NotImplementedError):
+            prepop_londoncreator.populate_station_duration_params(path)
+        d = prepop_londoncreator.london.get_station(393)._duration_dict
+        assert 14 in d
+        assert d[14] == (9.16312280185123, 1.632012029995245)
 
 
 class TestSimulationManager:

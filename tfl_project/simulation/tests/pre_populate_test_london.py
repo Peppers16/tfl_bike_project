@@ -1,5 +1,5 @@
 import tfl_project.simulation.sim_managment
-from tfl_project.simulation import sim_classes
+from pathlib import Path
 
 st_filter = """AND "StartStation Id" IN (1, 6, 14, 98, 393)
                 AND "EndStation Id" IN (1, 6, 14, 98, 393)"""
@@ -15,7 +15,7 @@ def main():
             lc.london._stations.pop(i)
     lc.populate_station_demand_dicts()
     lc.populate_station_destination_dicts()
-    lc.populate_station_duration_params()
+    lc.populate_station_duration_params(Path('simulation/tests/files/caches/duration_params'))
     lc.pickle_city('simulation/tests/files/')
 
 
