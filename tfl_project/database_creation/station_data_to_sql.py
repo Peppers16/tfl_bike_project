@@ -8,22 +8,12 @@ import warnings
 import pandas as pd
 from numpy import int64
 import sqlite3
+from pathlib import Path
 
 # PWD for this script will be set to data/
-station_csv = 'data/Bikepoints/bikepoint_statuses.csv'
-database = 'data/bike_db.db'
+station_csv = Path('data/Bikepoints/bikepoint_statuses.csv')
+database = Path('data/bike_db.db')
 table = 'station_fill'
-
-
-def directory_checks():
-    """Change pwd to data/ and warn if no existing database file"""
-    if os.getcwd().endswith('tfl_api_logger'):
-        os.chdir('../data')
-    elif os.getcwd().endswith('tflProject'):
-        os.chdir('data')
-
-    if not os.path.exists(database):
-        warnings.warn(database + ' was not found in data/ so a new database file may have been created')
 
 
 def read_format_station_csv(station_csv):
@@ -36,11 +26,11 @@ def read_format_station_csv(station_csv):
     df['station_id'] = df['station_id'].str[len('BikePoints_'):].astype(int64)
     df.columns = ['timestamp', 'bikepoint_id', 'docked', 'empty']
     df["hour"] = df["timestamp"].dt.hour
-    df["weekday"] = df["timestamp"].dt.weekday
+    df["day_of_week"] = df["timestamp"].dt.weekday
     return df
 
 
-def station_table_exists():
+def table_exists(table):
     """Check if station table exists already"""
     db = sqlite3.connect(database)
     c = db.cursor()
@@ -58,18 +48,18 @@ def create_station_table():
     c = db.cursor()
     q = f"""CREATE TABLE {table} (
                    "timestamp" DATETIME NOT NULL
-                   ,"bikepoint_id" INTEGER NOT NULL
+                   ,"bikepoint_id" INTEGER  NOT NULL
                    ,"docked" INTEGER NOT NULL CHECK(docked >= 0)
                    ,"empty" INTEGER NOT NULL CHECK(empty >= 0)
                    ,"hour" INTEGER NOT NULL 
-                   ,"weekday" INTEGER NOT NULL
+                   ,"day_of_week" INTEGER NOT NULL
                    );
                 """
     c.execute(q)
     c.close()
 
 
-def drop_station_table():
+def drop_table(table):
     db = sqlite3.connect(database)
     c = db.cursor()
     q = f"""DROP TABLE {table} ;"""
@@ -85,20 +75,18 @@ def df_to_sql_upload(df):
 
 def index_table():
     db = sqlite3.connect(database)
-    db.execute(f"CREATE INDEX bp_id ON {table}(bikepoint_id)")
     db.execute(f"CREATE INDEX stn_hour ON {table}(hour)")
-    db.execute(f"CREATE INDEX stn_wkday ON {table}(weekday)")
+    db.execute(f"CREATE INDEX stn_wkday ON {table}(day_of_week)")
     db.close()
 
 
 def main():
-    # directory_checks()
     # Check and recreate SQLite table if it already exists
-    if not station_table_exists():
+    if not table_exists(table=table):
         print(f'{table} does not exist in database. Creating...')
     else:
         print(f'{table} already exists! Dropping then recreating...')
-        drop_station_table()
+        drop_table(table=table)
     create_station_table()
     # Read csv then upload it to SQL table
     df = read_format_station_csv(station_csv)
@@ -110,4 +98,6 @@ def main():
     index_table()
     print('Done!')
 
-# TODO: Consider uploading station metadata and converting bikepoint id to a foreign key?
+
+if __name__ == '__main__':
+    main()

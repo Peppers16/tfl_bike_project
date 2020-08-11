@@ -8,15 +8,31 @@ import sqlite3
 import pickle
 import pandas as pd
 from numpy import isnan
+from tfl_project.database_creation.station_data_to_sql import table_exists,  drop_table
+from pathlib import Path
 
 import tfl_project.tfl_api_logger.bikeStationStatus as bikeStationStatus
 
-DBPATH = "data/bike_db.db"
-
+DBPATH = Path("data/bike_db.db")
+table_out = 'station_metadata'
 
 def main():
+    if table_exists(table_out):
+        print("dropping existing metadata table")
+        drop_table(table_out)
+
     # connect to sqlite database
     db = sqlite3.connect(DBPATH)
+
+    db.execute(f"""CREATE TABLE {table_out} (
+                   "bikepoint_id" INTEGER PRIMARY KEY
+                   ,"max_capacity" INTEGER  CHECK (max_capacity IS NOT NULL OR bikepoint_id < 0) 
+                   ,"median_capacity" INTEGER CHECK (median_capacity IS NOT NULL OR bikepoint_id < 0) 
+                   ,"common_name" STRING
+                   ,"latitude" FLOAT 
+                   ,"longitude" FLOAT
+                   );
+                """)
 
     # Bikepoint Station Data
     bikepointid_to_commonname = pickle.load(open(r"data\cycle_journeys\bikepointid_to_commonname.p", "rb"))
@@ -108,9 +124,9 @@ def main():
 
     bp_summaries.index.name = 'bikepoint_id'
     # Upload to SQLite database
-    bp_summaries.to_sql('station_metadata'
+    bp_summaries.to_sql(table_out
                         ,db
-                        ,if_exists='fail'
+                        ,if_exists='append'
                         ,index=True
                         ,dtype={
                             'bikepoint_id': 'INT'
@@ -121,10 +137,6 @@ def main():
                             , 'longitude': 'REAL'
                         }
                         )
-
-    db.execute("""
-        CREATE UNIQUE INDEX "meta_id" ON "station_metadata" ("bikepoint_id");
-    """)
 
     db.close()
     print('done')
@@ -145,7 +157,7 @@ def add_avg_5am_docked(pre_covid=True):
                 station_fill
             WHERE 
                 hour = 5
-                AND weekday = 1
+                AND day_of_week <= 4
                 AND TIME(timestamp) = '05:00:00'
                 {extra_where}
             GROUP BY 1
@@ -159,3 +171,7 @@ def add_avg_5am_docked(pre_covid=True):
             )
     ;""")
     db.close()
+
+
+if __name__ == '__main__':
+    main()
