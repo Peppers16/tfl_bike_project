@@ -16,7 +16,7 @@ def main():
     lc.populate_station_demand_dicts()
     lc.populate_station_destination_dicts()
     lc.populate_station_duration_params()
-    lc.pickle_city('simulation/tests/files/test_london.pickle')
+    lc.pickle_city('simulation/tests/files/')
 
 
 if __name__ == "__main__":

@@ -6,8 +6,14 @@ from pandas import read_sql
 from scipy.stats import gumbel_r
 from pandas import DataFrame
 import os
+import json
+from pathlib import Path
 
 from tfl_project.simulation.sim_classes import City, Station
+
+
+class IncompatibleParamsError(Exception):
+    pass
 
 
 class LondonCreator:
@@ -187,35 +193,63 @@ class LondonCreator:
         print("Done!")
         print(".london attribute has been populated using fresh SQL pulls")
 
-    def pickle_city(self, out_dir='simulation/files/london.pickle'):
-        out_file = open(out_dir, 'wb')
-        pickle.dump(self.london, out_file)
-        out_file.close()
-        print(f'City saved as {out_dir} for future use. Use load_pickled_city to use it again')
+    def pickle_city(self, out_dir='simulation/files/pickled_cities/london/'):
+        """Pickles the city to the specified directory, and also saved a parameter json for future
+        compatibility checks"""
+        city_loc = Path(out_dir) / 'london.pickle'
+        json_loc = Path(out_dir) / 'last_used_params.json'
 
-    def load_pickled_city(self, in_dir='simulation/files/london.pickle'):
+        with open(city_loc, 'wb') as f:
+            pickle.dump(self.london, f)
+        self.dump_parameter_json(json_loc)
+        print(f'City saved as {city_loc} for future use. Use load_pickled_city to use it again')
+
+    def load_pickled_city(self, in_dir='simulation/files/pickled_cities/london/'):
+        city_loc = Path(in_dir) / 'london.pickle'
+        json_loc = Path(in_dir) / 'last_used_params.json'
+
         # This is a quick guard-rail against loading a pickled city when you have asked for non-default values
-        if self.min_year != 2015 or self.minute_interval != 20 or self.additional_filters != \
-                """ AND "Start Date" <= '2020-03-15'""":
-            raise NotImplementedError("Specified non-default LondonCreator parameters, but attempted to read from "
-                                      "existing london.pickle file")
-        in_file = open(in_dir, 'rb')
-        self.london = pickle.load(in_file)
-        in_file.close()
+        if not self.parameter_json_is_compatible(json_loc):
+            raise IncompatibleParamsError(f"{json_loc} indicates that {city_loc} has incompatible parameters")
+        with open(city_loc, 'rb') as f:
+            self.london = pickle.load(f)
         print(f".london attribute has been loaded from {in_dir}")
         if not self.london._stations:
             print("Warning. No stations in loaded city")
 
-    def get_or_create_london(self, pickle_file='simulation/files/london.pickle'):
+    def get_or_create_london(self, pickle_loc='simulation/files/pickled_cities/london'):
         try:
-            self.load_pickled_city(in_dir=pickle_file)
+            self.load_pickled_city(in_dir=pickle_loc)
         except FileNotFoundError:
             print('existing pickled London not found: creating from scratch.')
             self.create_london_from_scratch()
-            self.pickle_city(out_dir=pickle_file)
+            self.pickle_city(out_dir=pickle_loc)
+        except IncompatibleParamsError:
+            error_string = 'Previously pickled city is incompatible with your current LondonCreator parameters.\n' \
+                    'Pass the location of either: a blank directory, or the location of a compatible pickled city.'
+            print(error_string)
+            raise
         else:
             raise
         return self.london
+
+    def dump_parameter_json(self, out_f='simulation/files/last_used_params.json'):
+        """This saves the current LondonCreator parameters to a JSON so that cached simulation parameters can be
+        checked for 'compatibility' with future LondonCreator instances"""
+        d = vars(self)
+        del d['london']
+        with open(Path(out_f), 'w') as outfile:
+            json.dump(d, outfile)
+
+    def parameter_json_is_compatible(self, in_f='simulation/files/last_used_params.json'):
+        """Checks attributes of this LondonCreator against a previously-saved parameter json and returns true if it
+        has matching attributes """
+        with open(Path(in_f)) as infile:
+            d = json.load(infile)
+        for k, v in d.items():
+            if self.__dict__[k] != v:
+                return False
+        return True
 
 
 class SimulationManager:

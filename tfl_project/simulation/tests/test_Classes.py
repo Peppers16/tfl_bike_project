@@ -2,15 +2,18 @@ import pytest
 from random import seed
 from math import isclose
 from tfl_project.simulation.sim_classes import City, Station
-from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager
+from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager, IncompatibleParamsError
 import os.path
 from os import remove
+from pathlib import Path
 
 # A small version of London is pre-populated for some testing
-test_london_location = 'simulation/tests/files/test_london.pickle'
-if os.path.exists(test_london_location):
-    remove(test_london_location)
-if not os.path.exists(test_london_location):
+test_london_location = 'simulation/tests/files/'
+city_loc = Path(test_london_location) / 'london.pickle'
+if city_loc.exists():
+    remove(city_loc)
+    remove(Path(test_london_location) / 'last_used_params.json')
+if not city_loc.exists():
     import tfl_project.simulation.tests.pre_populate_test_london
     print(f"file not found: {test_london_location}. Executing script to create it...")
     tfl_project.simulation.tests.pre_populate_test_london.main()
@@ -37,7 +40,9 @@ def nrly_empty_stn():
 
 @pytest.fixture
 def prepop_londoncreator():
-    lc = LondonCreator()
+    # additional SQL filters needed to pass compatibility check with output of pre_populate_test_london.py
+    lc = LondonCreator(additional_sql_filters="""AND "StartStation Id" IN (1, 6, 14, 98, 393)
+                AND "EndStation Id" IN (1, 6, 14, 98, 393)""")
     lc.load_pickled_city(test_london_location)
     return lc
 
@@ -266,6 +271,17 @@ class TestLondonCreator:
         for st in london._stations.values():
             if st != original_dest and st != new_dest:
                 assert st.distance_from(original_dest) > new_dest.distance_from(original_dest)
+
+    def test_parameter_json(self, prepop_londoncreator):
+        f_location = 'simulation/tests/files/last_used_params.json'
+        assert os.path.exists(f_location)
+        assert prepop_londoncreator.parameter_json_is_compatible(f_location)
+        prepop_londoncreator.min_year = 2016
+        assert not prepop_londoncreator.parameter_json_is_compatible(f_location)
+        with pytest.raises(IncompatibleParamsError):
+            prepop_londoncreator.load_pickled_city(test_london_location)
+        with pytest.raises(IncompatibleParamsError):
+            prepop_londoncreator.get_or_create_london(test_london_location)
 
 
 class TestSimulationManager:
