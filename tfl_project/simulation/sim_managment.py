@@ -92,7 +92,7 @@ class LondonCreator:
                 FROM journeys
                 WHERE
                     year >= {self.min_year}
-                    AND weekday = 1
+                    AND weekday <= 4
                     {self.additional_filters}
             )
 
@@ -141,7 +141,7 @@ class LondonCreator:
                 journeys
             WHERE
                 year >= {self.min_year}
-                AND weekday = 1
+                AND weekday <= 4
                 {self.additional_filters}
             GROUP BY
                 1,2,3"""
@@ -204,7 +204,7 @@ class LondonCreator:
             WHERE
                 "StartStation Id" = {start_id}
                 AND year >= {self.min_year}
-                AND weekday = 1
+                AND weekday <= 4
                 {self.additional_filters}
             """
         )
