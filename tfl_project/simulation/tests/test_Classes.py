@@ -6,7 +6,7 @@ from tfl_project.simulation.sim_managment import LondonCreator, SimulationManage
 import os.path
 from os import remove
 from pathlib import Path
-import json
+from numpy import nan
 
 # A small version of London is pre-populated for some testing
 test_london_location = 'simulation/tests/files/'
@@ -272,6 +272,37 @@ class TestLondonCreator:
         for st in london._stations.values():
             if st != original_dest and st != new_dest:
                 assert st.distance_from(original_dest) > new_dest.distance_from(original_dest)
+
+    def test_next_destination_w_null(self, prepop_londoncreator):
+        """Stations missing co-ordinates should not be selected as next destination"""
+        london = prepop_londoncreator.london
+        st_14 = london.get_station(14)
+        st_14._latitude = None
+        st_14._longitude = None
+        london.generate_journey(
+            start_st=london.get_station(1)
+            ,dest_st=london.get_station(98)
+            ,duration=1)
+        london.get_station(98)._docked = london.get_station(98)._capacity
+        london.main_elapse_time(1)
+        new_dest = london._agents[0]._current_destination
+        assert new_dest != st_14
+
+    def test_next_destination_w_nan(self, prepop_londoncreator):
+        """Stations missing co-ordinates should not be selected as next destination"""
+        london = prepop_londoncreator.london
+        st_14 = london.get_station(14)
+        st_14._latitude = nan
+        st_14._longitude = nan
+        london.generate_journey(
+            start_st=london.get_station(1)
+            ,dest_st=london.get_station(98)
+            ,duration=1)
+        london.get_station(98)._docked = london.get_station(98)._capacity
+        london.main_elapse_time(1)
+        new_dest = london._agents[0]._current_destination
+        assert new_dest != st_14
+
 
     def test_parameter_json(self, prepop_londoncreator):
         f_location = 'simulation/tests/files/last_used_params.json'

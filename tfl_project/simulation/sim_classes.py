@@ -3,6 +3,7 @@ import numpy.random
 from scipy.stats import gumbel_r
 from math import sqrt
 from pandas import DataFrame
+from numpy import nan
 
 
 class City:
@@ -272,7 +273,10 @@ class Station:
         Technically, Euclidean distance is not a perfect measure of distance between co-ordinates due to projection
         of Earth's surface. But this inaccuracy can be ignored since we are just finding closest stations within a
         relatively tiny area"""
-        dist = sqrt((self._latitude - other._latitude)**2 + (self._longitude - other._longitude)**2)
+        try:
+            dist = sqrt((self._latitude - other._latitude)**2 + (self._longitude - other._longitude)**2)
+        except TypeError:
+            dist = nan
         return dist
 
 
