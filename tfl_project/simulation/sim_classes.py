@@ -249,14 +249,21 @@ class Station:
                 destination = choice(list(self._city._stations.values()))
                 dest_id = destination.get_id()
             # decide duration using gumbel_r distribution
-            if dest_id in self._duration_dict:
-                duration = round(gumbel_r(*self._duration_dict[dest_id]).rvs(1)[0])
-            else:
-                print(f"Warning: Station {self._id} was asked to generate unprecedented duration for destination {dest_id}")
-                duration = round(gumbel_r(*choice(self._duration_dict.values())).rvs(1)[0])
-            duration = max(duration, 1)
+            duration = self.pick_duration(dest_id)
             journey_demand.append((self, destination, duration))
         return journey_demand
+
+    def pick_duration(self, dest_id):
+        """Randomly pick a duration based on the gumbel_r distribution for durations from self to destination station.
+        If an unprecendented destination is selected, a random gumbel is picked from self"""
+        if dest_id in self._duration_dict:
+            duration = round(gumbel_r(*self._duration_dict[dest_id]).rvs(1)[0])
+        else:
+            print(f"Warning: Station {self._id} was asked to generate unprecedented duration for destination {dest_id}")
+            duration = round(gumbel_r(*choice(list(self._duration_dict.values()))).rvs(1)[0])
+        duration = max(duration, 1)
+        return int(duration)
+
 
     def add_dest_volume_parameter(self, interval, destination_id, journeys):
         if interval not in self._dest_dict:
@@ -302,9 +309,7 @@ class Agent:
             key=lambda x: x.distance_from(self._current_destination)
         )
         new_destination = candidates[0]
-        # TODO: There is a small risk of asking for an unprecedented duration here
-        new_duration = round(gumbel_r(*self._current_destination._duration_dict[new_destination.get_id()]).rvs(1)[0])
-        new_duration = max(new_duration, 1)
+        new_duration = self._current_destination.pick_duration(new_destination.get_id())
         self._last_departed_station = self._current_destination
         self._current_destination = new_destination
         self._remaining_duration = new_duration
