@@ -1,8 +1,10 @@
-from tfl_project.database_creation import make_SQLite_DB, station_data_to_sql, station_meta_to_sql
+from tfl_project.database_creation import bp_lookups_from_tfl, make_SQLite_DB, station_data_to_sql, station_meta_to_sql
 
 # This currently assumes you'll run script directly with tfl_project as the working directory
 # May be subject to change if we wrap this in yet another script
 if __name__ == '__main__':
+    print("Fetching TFL bikepoint lookups if necessary")
+    bp_lookups_from_tfl.main()
     print("Uploading station status data from csvs")
     station_data_to_sql.main()
     print("Creating a station_metadata table")

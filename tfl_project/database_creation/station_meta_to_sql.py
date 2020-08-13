@@ -13,8 +13,11 @@ from pathlib import Path
 
 import tfl_project.tfl_api_logger.bikeStationStatus as bikeStationStatus
 
-DBPATH = Path("data/bike_db.db")
+dbpath = Path("data/bike_db.db")
 table_out = 'station_metadata'
+cn_pickle_dir = Path('data/tfl_lookups/bikepointid_to_commonname.p')
+ll_pickle_dir = Path('data/tfl_lookups/bikepointid_to_latlongs.p')
+
 
 def main():
     if table_exists(table_out):
@@ -22,7 +25,7 @@ def main():
         drop_table(table_out)
 
     # connect to sqlite database
-    db = sqlite3.connect(DBPATH)
+    db = sqlite3.connect(dbpath)
 
     db.execute(f"""CREATE TABLE {table_out} (
                    "bikepoint_id" INTEGER PRIMARY KEY
@@ -35,8 +38,8 @@ def main():
                 """)
 
     # Bikepoint Station Data
-    bikepointid_to_commonname = pickle.load(open(r"data\cycle_journeys\bikepointid_to_commonname.p", "rb"))
-    bikepointid_to_latlongs = pickle.load(open(r"data\cycle_journeys\bikepointid_to_latlongs.p", "rb"))
+    bikepointid_to_commonname = pickle.load(open(cn_pickle_dir, "rb"))
+    bikepointid_to_latlongs = pickle.load(open(ll_pickle_dir, "rb"))
 
     # Manually excluding one timestamp where only three bikepoints were recorded?
     station_fill = pd.read_sql_query("""
@@ -146,7 +149,7 @@ def add_avg_5am_docked(pre_covid=True):
     extra_where = ""
     if pre_covid:
         extra_where = "AND timestamp <= '2020-03-15'"
-    db = sqlite3.connect(DBPATH)
+    db = sqlite3.connect(dbpath)
     db.execute("ALTER TABLE station_metadata ADD COLUMN avg_5am_docked INTEGER;")
     db.execute(f"""
         WITH avg_5ams AS (
@@ -175,3 +178,4 @@ def add_avg_5am_docked(pre_covid=True):
 
 if __name__ == '__main__':
     main()
+

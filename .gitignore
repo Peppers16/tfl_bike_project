@@ -2,6 +2,7 @@ apiCredentials.txt
 tfl_project/data/Bikepoints
 tfl_project/data/cycle_journeys
 tfl_project/data/TFL_Status
+tfl_project/data/tfl_lookups
 tfl_project/data/bike_db.db
 googleCredentials.json
 token.pickle

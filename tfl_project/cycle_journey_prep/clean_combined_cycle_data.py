@@ -4,42 +4,16 @@
 
 import numpy as np
 import pandas as pd
-from tfl_project.tfl_api_logger.logging_functions import read_api_credentials
-from tfl_project.tfl_api_logger.bikeStationStatus import request_station_status
 import pickle
 
-credentials_file = r'../tfl_api_logger/apiCredentials.txt'
-input_csv = r'..\data\cycle_journeys\JourneysDataCombined.csv'
-output_csv = r'..\data\cycle_journeys\JourneysDataCombined_CLEANSED.csv'
-output_lookup_dir = r'../data/cycle_journeys\\'
+from pathlib import Path
 
-def create_tfl_station_lookups(credentials_file):
-    """This makes a request to the bikepoints API, and creates authority lookups which will
-    help us clean the journey data
-    returns a bikepoint_id to common_name lookup
-     and a terminal_name to common_name lookup
-     and a common_name to bikepoint_id lookup
-    """
-    credentials = read_api_credentials(credentials_file)
-    response_json = request_station_status(credentials)
-    # list bikepoint_ids
-    bikepoint_ids = [int(d['id'][11:]) for d in response_json]
-    # list terminal names
-    terminal_names = []
-    for d in response_json:
-        for prop in d['additionalProperties']:
-            if prop['key'] == 'TerminalName':
-                terminal_names.append(int(prop['value']))
-    # fetch common names (i.e. descriptions)
-    common_names = [d['commonName'] for d in response_json]
-    # for convenience later: look up lat longs
-    latlongs = [(float(d['lat']), float(d['lon'])) for d in response_json]
-    # zip into dictionary lookups
-    bp_to_name = dict(zip(bikepoint_ids, common_names))
-    tn_to_bp = dict(zip(terminal_names, bikepoint_ids))
-    bp_to_latlongs = dict(zip(bikepoint_ids, latlongs))
-
-    return bp_to_name, tn_to_bp, bp_to_latlongs
+credentials_file = Path('tfl_api_logger/apiCredentials.txt')
+input_csv = Path('data/cycle_journeys/JourneysDataCombined.csv')
+output_csv = Path('data/cycle_journeys/JourneysDataCombined_CLEANSED.csv')
+output_lookup_dir = Path('data/cycle_journeys')
+cn_pickle_dir = Path('data/tfl_lookups/bikepointid_to_commonname.p')
+tn_pickle_dir = Path('data/tfl_lookups/bikepointid_to_terminal_name.p')
 
 
 def fix_station_id(given_id, bp_to_name, tn_to_bp):
@@ -136,8 +110,11 @@ def correct_suspect_enddates(df, tolerance=60):
 transformations = [correct_start_date_errors, correct_0_end_date_stations, correct_suspect_enddates]
 
 
-def main(input_csv, output_csv, transformations, credentials_file, output_lookup_dir):
-    bp_to_name, tn_to_bp, bp_to_latlongs = create_tfl_station_lookups(credentials_file)
+def main():
+    with open(cn_pickle_dir, 'rb') as f:
+        bp_to_name = pickle.load(f)
+    with open(tn_pickle_dir, 'rb') as f:
+        tn_to_bp = pickle.load(f)
 
     df_iter = pd.read_csv(input_csv, header=0, sep=',', parse_dates=['Start Date', 'End Date']
                           , dayfirst=True, infer_datetime_format=True, chunksize=1000000)
@@ -153,11 +130,8 @@ def main(input_csv, output_csv, transformations, credentials_file, output_lookup
         df_chunk.to_csv(output_csv, mode=mode, index=False, header=header)
         mode, header = 'a', False  # all subsequent chunks
     print("Done with cleansing!")
-    pickle.dump(bp_to_name, open(output_lookup_dir + 'bikepointid_to_commonname.p', 'wb'))
-    pickle.dump(bp_to_latlongs, open(output_lookup_dir + 'bikepointid_to_latlongs.p', 'wb'))
-    print("Dumped lookups as pickle files!")
     print()
 
 
 if __name__ == '__main__':
-    main(input_csv, output_csv, transformations, credentials_file, output_lookup_dir)
+    main()
