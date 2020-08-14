@@ -303,7 +303,6 @@ class TestLondonCreator:
         new_dest = london._agents[0]._current_destination
         assert new_dest != st_14
 
-
     def test_parameter_json(self, prepop_londoncreator):
         f_location = 'simulation/tests/files/last_used_params.json'
         assert os.path.exists(f_location)
