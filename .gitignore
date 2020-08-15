@@ -17,5 +17,4 @@ tfl_project/simulation/tests/files/test_london.pickle
 desktop.ini
 /tfl_project/simulation/tests/files/last_used_params.json
 /tfl_project/simulation/tests/files/london.pickle
-*.json
 london.pickle

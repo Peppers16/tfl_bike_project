@@ -353,10 +353,14 @@ class SimulationManager:
         return combined_df
 
     def output_df_to_csv(self, df, descriptor=''):
-        output_dir = 'data/simulation_outputs/' + self.simulation_id + '/'
-        if not os.path.exists(output_dir):
-            os.mkdir(output_dir)
-        df.to_csv(output_dir + descriptor + '.csv', index=False)
+        output_dir = Path('data/simulation_outputs/') / self.simulation_id
+        if not output_dir.exists():
+            output_dir.mkdir()
+        output_file = output_dir / (descriptor + '.csv')
+        if output_file.exists():
+            print(output_file, 'already exists. Over-writing...')
+            output_file.unlink()
+        df.to_csv(output_file, index=False)
 
     def output_dfs_to_csv(self):
         self.output_df_to_csv(self.combined_timeseries_df, 'time_series')
