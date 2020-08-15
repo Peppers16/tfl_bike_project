@@ -71,6 +71,7 @@ class LondonCreator:
                 ,longitude
                 ,IFNULL(avg_5am_docked, 0)
             FROM station_metadata
+            WHERE bikepoint_id > 0 
             """
         )
         print("Populating stations")
@@ -93,6 +94,8 @@ class LondonCreator:
                 WHERE
                     year >= {self.min_year}
                     AND weekday_ind = 1
+                    AND "StartStation Id" != -1
+                    AND "StartStation Id" NOT NULL
                     {self.additional_filters}
             )
 
@@ -142,6 +145,10 @@ class LondonCreator:
             WHERE
                 year >= {self.min_year}
                 AND weekday_ind = 1
+                AND "StartStation Id" != 0
+                AND "StartStation Id" NOT NULL
+                AND "EndStation Id" != 0
+                AND "EndStation Id" NOT NULL
                 {self.additional_filters}
             GROUP BY
                 1,2,3"""
@@ -205,16 +212,21 @@ class LondonCreator:
                 "StartStation Id" = {start_id}
                 AND year >= {self.min_year}
                 AND weekday_ind = 1
+                -- Query plan more efficient if we specify these rather than ESid > 0
+                AND "EndStation Id" != -1
+                AND "EndStation Id" NOT NULL
                 {self.additional_filters}
             """
         )
-        print(f"fetched {len(journey_df)} journeys for station {start_id} in {(time.time()-start_time)/60} minutes")
+        print(f"fetched {len(journey_df)} journeys for station {start_id} in {(time.time()-start_time)} seconds")
+        start_time = time.time()
         journey_df.dropna(subset=['Duration'], inplace=True)
         for end_id in journey_df["EndStation Id"].unique():
             durations = journey_df.loc[journey_df["EndStation Id"] == end_id]['Duration'].values
             # creates a tuple of scipy.stats.gumbel_r parameters
             params = gumbel_r.fit(durations)
             d[end_id] = params
+        print(f"\tfitted {len(journey_df)} journeys in {(time.time()-start_time)/60} minutes")
         return d
 
     def populate_station_duration_params(self, cache_loc=Path('simulation/files/caches/duration_params')):
