@@ -37,6 +37,9 @@ def main():
                    );
                 """)
 
+    # Add record for the -1 bikepoint_id I used in data cleaning to represent an un-recognised station
+    db.execute(f"""INSERT INTO {table_out}(bikepoint_id, common_name) VALUES (-1, "UNRECOGNISED STATION")""")
+
     # Bikepoint Station Data
     bikepointid_to_commonname = pickle.load(open(cn_pickle_dir, "rb"))
     bikepointid_to_latlongs = pickle.load(open(ll_pickle_dir, "rb"))

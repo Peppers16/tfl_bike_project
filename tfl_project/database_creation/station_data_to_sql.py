@@ -1,10 +1,3 @@
-# It is likely that data/bike_db.db already exists (made by make_SQLite_DB.py).
-# If so, you will want to connect to the existing dababase rather than make another one.
-
-# This script should no longer be run interactively. It is meant to be called by tfl_project.create_sqlite_database.py
-
-import os
-import warnings
 import pandas as pd
 from numpy import int64
 import sqlite3
