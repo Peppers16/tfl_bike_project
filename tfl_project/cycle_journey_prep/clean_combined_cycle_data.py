@@ -37,9 +37,14 @@ def fix_station_id(given_id, auth_bp_list, tn_to_bp):
       bikepoints. I've switched to using station-metadata which is from the station_fill data, since the former is a
       subset of the latter, and we previously missed some important stations.
       """
-    if np.isnan(given_id):
-        return np.nan
-    given_id = int(given_id)
+    try:
+        if np.isnan(given_id):
+            return np.nan
+    except TypeError:
+        try:
+            given_id = int(given_id)
+        except ValueError:  # Sometimes there is just a string not even resembling an integer
+            return -1
     # all good:
     if given_id in auth_bp_list:
         return given_id
@@ -63,7 +68,7 @@ def correct_start_date_errors(df):
         , df['End Date'] - pd.to_timedelta(df['Duration'], unit='s')
         , axis=0
         , inplace=True
-     )
+    )
     return df
 
 
