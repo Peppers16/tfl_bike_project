@@ -57,6 +57,7 @@ def main():
     db.execute("""CREATE INDEX start_end ON journeys("StartStation Id", "EndStation Id")""")
     db.execute("""CREATE INDEX minute ON journeys(minute_of_day)""")
     db.execute("""CREATE INDEX startid_weekday ON journeys("StartStation Id", weekday_ind)""")
+    db.execute("""CREATE INDEX year_weekday_ind ON journeys("year", weekday_ind)""")
     # Slow but helps the optimizer to prioritize filtering by minute.
     db.execute("""ANALYZE journeys""")
     db.close()
