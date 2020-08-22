@@ -4,6 +4,7 @@ tfl_project/data/cycle_journeys
 tfl_project/data/TFL_Status
 tfl_project/data/tfl_lookups
 tfl_project/data/bike_db.db
+tfl_project/data/analytical_outputs
 googleCredentials.json
 token.pickle
 workspace.xml
