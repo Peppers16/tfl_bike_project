@@ -19,3 +19,4 @@ desktop.ini
 /tfl_project/simulation/tests/files/last_used_params.json
 /tfl_project/simulation/tests/files/london.pickle
 london.pickle
+mapboxtoken.txt
