@@ -1,12 +1,14 @@
 import pytest
 from random import seed
 from math import isclose
-from tfl_project.simulation.sim_classes import City, Station
-from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager, IncompatibleParamsError
 import os.path
 from os import remove
 from pathlib import Path
 from numpy import nan
+
+from tfl_project.simulation.city import City
+from tfl_project.simulation.station import Station
+from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager, IncompatibleParamsError
 
 # A small version of London is pre-populated for some testing
 test_london_location = 'simulation/tests/files/'

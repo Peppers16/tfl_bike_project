@@ -9,7 +9,8 @@ import os
 import json
 from pathlib import Path
 
-from tfl_project.simulation.sim_classes import City, Station
+from tfl_project.simulation.city import City
+from tfl_project.simulation.station import Station
 
 
 class IncompatibleParamsError(Exception):
