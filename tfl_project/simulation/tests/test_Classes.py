@@ -7,7 +7,7 @@ from pathlib import Path
 from numpy import nan
 
 from tfl_project.simulation.city import City
-from tfl_project.simulation.station import Station
+from tfl_project.simulation.station import Store, Station, WarehousedStation, BikeUnderflowException,BikeOverflowException
 from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager, IncompatibleParamsError
 
 # A small version of London is pre-populated for some testing
@@ -49,6 +49,12 @@ def prepop_londoncreator():
     lc.load_pickled_city(test_london_location)
     return lc
 
+@pytest.fixture
+def floating_warehouse_setup():
+    warehouse = Store(capacity=10, docked_init=2)
+    s1 = WarehousedStation(capacity=5, docked_init=2, st_id=1, warehouse=warehouse)
+    s2 = WarehousedStation(capacity=5, docked_init=4, st_id=2, warehouse=warehouse)
+    return warehouse, s1, s2
 
 class TestCity:
     def testcitystub(self, basic_city):
@@ -356,3 +362,36 @@ class TestSimulationManager:
         assert os.path.exists(test_dir + '/events.csv')
         os.remove(test_dir + '/events.csv')
         os.rmdir(test_dir)
+
+
+class TestWarehouse:
+    def test_emptying_warehouse(self, floating_warehouse_setup):
+        warehouse, s1, s2 = floating_warehouse_setup
+        s1.give_bike()
+        assert s1._docked == 1
+        assert warehouse._docked == 2
+        s1.give_bike()
+        assert s1._docked == 1
+        assert warehouse._docked == 1
+        s1.give_bike()
+        assert s1._docked == 1
+        assert warehouse.is_empty()
+        s1.give_bike()
+        assert s1.is_empty()
+        assert warehouse.is_empty()
+        with pytest.raises(BikeUnderflowException):
+            s1.give_bike()
+
+    def test_filling_warehouse(self, floating_warehouse_setup):
+        warehouse, s1, s2 = floating_warehouse_setup
+        assert warehouse._docked == 2
+        assert s2._docked == 4
+        for i in range(8):
+            s2.take_bike()
+            assert warehouse._docked == 2 + i + 1
+            assert not s2.is_full()
+        assert warehouse.is_full()
+        s2.take_bike()
+        assert s2.is_full()
+        with pytest.raises(BikeOverflowException):
+            s2.take_bike()

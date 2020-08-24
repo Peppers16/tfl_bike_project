@@ -6,6 +6,14 @@ from numpy import nan
 from scipy.stats import gumbel_r
 
 
+class BikeUnderflowException(Exception):
+    pass
+
+
+class BikeOverflowException(Exception):
+    pass
+
+
 class Store:
     def __init__(self, capacity: int, docked_init: int):
         """A Store is a parent class which could be a station or a warehouse. It contains bikes and can receive or
@@ -36,7 +44,7 @@ class Store:
             self._docked -= 1
             return True
         else:
-            raise Exception('Bike underflow occurred')
+            raise BikeUnderflowException('Bike underflow occurred')
 
     def take_bike(self):
         """If the store is not full, docks a bike and returns True"""
@@ -44,7 +52,7 @@ class Store:
             self._docked += 1
             return True
         else:
-            raise Exception('Bike overflow occurred')
+            raise BikeOverflowException('Bike overflow occurred')
 
     def distance_from(self, other):
         """Give distance of self from other based on co-ordinates
@@ -59,7 +67,7 @@ class Store:
 
 
 class Station(Store):
-    def __init__(self, capacity=None, docked_init=None, st_id=None, demand_dict=None, dest_dict=None, duration_dict=None):
+    def __init__(self, capacity, docked_init, st_id=None, demand_dict=None, dest_dict=None, duration_dict=None):
         """
         A Station is used directly by agents who begin and end journeys at stations.
         A station has various attributes relating to demand at a given time interval, and can be asked by City to
@@ -148,3 +156,41 @@ class Station(Store):
     def add_dest_duration_params(self, destination_id, params):
         self._duration_dict[destination_id] = params
 
+
+class WarehousedStation(Station):
+    """A Station that is directly linked to a (shared) Store.
+    If the WarehousedStation becomes full or empty it will give or take a bike from the Store for free.
+    The operation takes no time: the assumption is in real life storage and retrieval happens preemptively.
+
+    It is up to the programmer to assign a realistic warehouse. The location of the warehouse won't be checked.
+    """
+    def __init__(self, capacity: int, docked_init: int, warehouse: Store,
+                 st_id=None, demand_dict=None, dest_dict=None, duration_dict=None):
+        super().__init__(capacity, docked_init, st_id, demand_dict, dest_dict, duration_dict)
+        self._warehouse = warehouse
+
+    def try_bike_from_warehouse(self):
+        try:
+            self._warehouse.give_bike()
+            self._docked += 1
+        except BikeUnderflowException:
+            return
+
+    def try_bike_to_warehouse(self):
+        try:
+            self._warehouse.take_bike()
+            self._docked -= 1
+        except BikeOverflowException:
+            return
+
+    def give_bike(self):
+        """The WarehousedStation will try to avoid being empty if possible"""
+        if self._docked == 1:
+            self.try_bike_from_warehouse()
+        super().give_bike()
+
+    def take_bike(self):
+        """The WarehousedStation will try to avoid being full if possible"""
+        if self._docked == (self._capacity - 1):
+            self.try_bike_to_warehouse()
+        super().take_bike()
