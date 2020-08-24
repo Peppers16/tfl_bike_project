@@ -326,11 +326,29 @@ class LondonCreator:
 
     def parameter_json_is_compatible(self, in_f):
         """Checks attributes of this LondonCreator against a previously-saved parameter json and returns true if it
-        has matching attributes """
+        has matching attributes.
+
+        Note: The check will pass if the previously saved json lacks attributes which have since been added to LondonCreator.
+        This should ideally be dealt with, but for now I am content with this because it means that the 'base london'
+        cached duration parameters can also be used by 'warehoused london'"""
         with open(Path(in_f)) as infile:
             d = json.load(infile)
         for k, v in d.items():
-            if self.__dict__[k] != v:
+            # This block looks a bit messy now and stems from the fact that json converts integer dict keys to strings.
+            # After adding the LondonCreator.warehoused_stations attribute I had to do this workaround.
+            # Would be nice to find a neater workaround if possible.
+            if k == 'warehoused_stations':  # has to be assessed differently because json saves keys as strings
+                if v is None:
+                    if self.warehoused_stations is not None:
+                        return False
+                else:
+                    for st_id, wh in v.items():
+                        try:
+                            if self.warehoused_stations[int(st_id)] != wh:
+                                return False
+                        except KeyError:
+                            return False
+            elif self.__dict__[k] != v:
                 return False
         return True
 
@@ -371,7 +389,7 @@ class SimulationManager:
         if combined_df is None:
             combined_df = instance_df
         else:
-            combined_df = self.combined_timeseries_df.append(instance_df.copy(), ignore_index=True)
+            combined_df = combined_df.append(instance_df.copy(), ignore_index=True)
         return combined_df
 
     def output_df_to_csv(self, df, descriptor=''):
