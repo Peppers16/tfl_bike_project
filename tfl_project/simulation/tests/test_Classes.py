@@ -418,3 +418,14 @@ class TestWarehouse:
         assert s2.is_full()
         with pytest.raises(BikeOverflowException):
             s2.take_bike()
+
+    def test_two_stations(self, floating_warehouse_setup):
+        """Test two stations performing independent actions both impact the same warehouse"""
+        warehouse, s1, s2 = floating_warehouse_setup
+        s1._docked = 1
+        s2._docked = 1
+        assert warehouse._docked == 2
+        s1.give_bike()
+        assert warehouse._docked == 1
+        s2.give_bike()
+        assert warehouse.is_empty()
