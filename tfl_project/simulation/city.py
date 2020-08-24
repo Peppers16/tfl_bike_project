@@ -15,6 +15,7 @@ class City:
         The simulation is not restricted to this interval.
         """
         self._stations = dict()
+        self._warehouses = dict()
         self._agents = []
         self._time = 0
         self._interval_size = interval_size
@@ -123,8 +124,18 @@ class City:
         self._stations[key] = s
         s._city = self
 
+    def add_warehouse(self, w):
+        key = w.get_id()
+        if key in self._warehouses:
+            raise ValueError(f"Store with ID {key} is already in city")
+        self._warehouses[key] = w
+        w._city = self
+
     def get_station(self, key):
         return self._stations[key]
+
+    def get_warehouse(self, key):
+        return self._warehouses[key]
 
     def log_event(self, event_key, start_st, end_st, orig_start_st, orig_end_st):
         self._event_log['totals'][event_key] += 1

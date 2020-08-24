@@ -333,6 +333,29 @@ class TestLondonCreator:
         assert 14 in d
         assert d[14] == (9.16312280185123, 1.632012029995245)
 
+    def test_warehouse_lc_creation(self):
+
+        whpl = [
+            {
+                'capacity': 100
+                , 'docked_init': 50
+                , 'st_id': 'WATERLOO'
+            }, {
+                'capacity': 100
+                , 'docked_init': 50
+                , 'st_id': 'KINGSX'
+            }
+        ]
+        whs = {14: 'WATERLOO'}
+        lc = LondonCreator(warehouse_param_list=whpl, warehoused_stations=whs)
+        lc.populate_warehouses()
+        assert len(lc.london._warehouses) == 2
+        assert isinstance(lc.london._warehouses['WATERLOO'], Store)
+        lc.populate_tfl_stations()
+        assert isinstance(lc.london.get_station(14), WarehousedStation)
+        assert not isinstance(lc.london.get_station(6), WarehousedStation)
+
+
 
 class TestSimulationManager:
     def test_simulations(self, prepop_londoncreator):

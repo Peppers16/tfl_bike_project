@@ -5,12 +5,11 @@ from copy import deepcopy
 from pandas import read_sql
 from scipy.stats import gumbel_r
 from pandas import DataFrame
-import os
 import json
 from pathlib import Path
 
 from tfl_project.simulation.city import City
-from tfl_project.simulation.station import Station
+from tfl_project.simulation.station import Station, Store, WarehousedStation
 
 
 class IncompatibleParamsError(Exception):
@@ -19,21 +18,23 @@ class IncompatibleParamsError(Exception):
 
 class LondonCreator:
     def __init__(self, min_year=2015, minute_interval=20, exclude_covid=True
-                 , additional_sql_filters=""""""):
+                 , additional_sql_filters="""""", warehouse_param_list=None, warehoused_stations: dict = None):
         """
         Creates a city that emulates the true London BBS, including its stations.
 
         min_year: First year from which simulation data will be modelled
         minute_interval: The granularity with which data will be summarised. E.g. if 20, the journey demand per
             station will be calculated per every 20-minute interval in a 24 hour period.
-
-        TODO: decide best way to customise simulated versions of London. You could instantiate a LondonCreator
-         and manually modify its .london attribute? Or you could pass it parameters in a spreadsheet or similar.
+        warehouse_list: A list of tuples giving Store parameters which should be added to the city to serve as warehouses.
+        warehoused_stations: A dictionary of bikepoint ids mapping to warehouse IDs. These bikepoints are coupled to
+            those warehouses and can freely exchange bikes with them.
         """
         self.london = City(interval_size=minute_interval)
         self.min_year = min_year
         self.minute_interval = minute_interval
         self.additional_filters = additional_sql_filters
+        self.warehouse_param_list = warehouse_param_list
+        self.warehoused_stations = warehoused_stations
         if exclude_covid:
             self.additional_filters = additional_sql_filters + """ AND "Start Date" <= '2020-03-15'"""
 
@@ -54,6 +55,12 @@ class LondonCreator:
         finally:
             db.close()
         return df
+
+    def populate_warehouses(self):
+        if self.warehouse_param_list:
+            for wt in self.warehouse_param_list:
+                warehouse = Store(**wt)
+                self.london.add_warehouse(warehouse)
 
     def populate_tfl_stations(self):
         """
@@ -77,11 +84,24 @@ class LondonCreator:
         )
         print("Populating stations")
         for row in rows:
-            s = Station(capacity=row[1]
-                        , docked_init=row[5]
-                        , st_id=row[0])
-            s._latitude = row[3]
-            s._longitude = row[4]
+            st_id = row[0]
+            if self.warehoused_stations and st_id in self.warehoused_stations:
+                # The station needs to get instantiated as a WarehousedStation
+                wh = self.london.get_warehouse(self.warehoused_stations[st_id])
+                s = WarehousedStation(capacity=row[1]
+                                      , docked_init=row[5]
+                                      , st_id=st_id
+                                      , latitude=row[3]
+                                      , longitude=row[4]
+                                      , warehouse=wh
+                                      )
+            else:
+                s = Station(capacity=row[1]
+                            , docked_init=row[5]
+                            , st_id=st_id
+                            , latitude=row[3]
+                            , longitude=row[4]
+                            )
             s._common_name = row[2]
             self.london.add_station(s)
 
@@ -250,6 +270,7 @@ class LondonCreator:
 
     def create_london_from_scratch(self):
         print("Creating City using fresh data pulls")
+        self.populate_warehouses()
         self.populate_tfl_stations()
         self.populate_station_demand_dicts()
         self.populate_station_destination_dicts()

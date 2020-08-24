@@ -15,7 +15,7 @@ class BikeOverflowException(Exception):
 
 
 class Store:
-    def __init__(self, capacity: int, docked_init: int):
+    def __init__(self, capacity: int, docked_init: int, st_id=None, latitude=0, longitude=0):
         """A Store is a parent class which could be a station or a warehouse. It contains bikes and can receive or
         release them. It has a finite capacity.
         capacity: total number of storage.
@@ -27,10 +27,11 @@ class Store:
             raise ValueError(f"docked_init must be between 0 and capacity. {docked_init} was given")
 
         self._docked = docked_init
-        self._latitude = 0
+        self._latitude = latitude
         self._city = None
         self._capacity = capacity
-        self._longitude = 0
+        self._longitude = longitude
+        self._id = st_id
 
     def is_empty(self):
         return self._docked == 0
@@ -65,9 +66,13 @@ class Store:
             dist = nan
         return dist
 
+    def get_id(self):
+        return self._id
+
 
 class Station(Store):
-    def __init__(self, capacity, docked_init, st_id=None, demand_dict=None, dest_dict=None, duration_dict=None):
+    def __init__(self, capacity, docked_init, st_id=None, demand_dict=None, dest_dict=None, duration_dict=None,
+                 latitude=0, longitude=0):
         """
         A Station is used directly by agents who begin and end journeys at stations.
         A station has various attributes relating to demand at a given time interval, and can be asked by City to
@@ -79,9 +84,8 @@ class Station(Store):
         :param docked_init: int
         :param st_id: int
         """
-        super().__init__(capacity=capacity, docked_init=docked_init)
+        super().__init__(capacity=capacity, docked_init=docked_init, st_id=st_id, latitude=latitude, longitude=longitude)
 
-        self._id = st_id
         # Journey demand simulation parameters
         if demand_dict:
             self._demand_dict = demand_dict
@@ -97,9 +101,6 @@ class Station(Store):
             self._duration_dict = duration_dict
         else:
             self._duration_dict = {}
-
-    def get_id(self):
-        return self._id
 
     def decide_journey_demand(self, interval, elapsing=1):
         """
@@ -165,8 +166,8 @@ class WarehousedStation(Station):
     It is up to the programmer to assign a realistic warehouse. The location of the warehouse won't be checked.
     """
     def __init__(self, capacity: int, docked_init: int, warehouse: Store,
-                 st_id=None, demand_dict=None, dest_dict=None, duration_dict=None):
-        super().__init__(capacity, docked_init, st_id, demand_dict, dest_dict, duration_dict)
+                 st_id=None, demand_dict=None, dest_dict=None, duration_dict=None, latitude=0, longitude=0):
+        super().__init__(capacity, docked_init, st_id, demand_dict, dest_dict, duration_dict, latitude, longitude)
         self._warehouse = warehouse
 
     def try_bike_from_warehouse(self):
