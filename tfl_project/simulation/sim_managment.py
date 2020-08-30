@@ -166,9 +166,9 @@ class LondonCreator:
             WHERE
                 year >= {self.min_year}
                 AND weekday_ind = 1
-                AND "StartStation Id" != 0
+                AND "StartStation Id" != -1
                 AND "StartStation Id" NOT NULL
-                AND "EndStation Id" != 0
+                AND "EndStation Id" != -1
                 AND "EndStation Id" NOT NULL
                 {self.additional_filters}
             GROUP BY

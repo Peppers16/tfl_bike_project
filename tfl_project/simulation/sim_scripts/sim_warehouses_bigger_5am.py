@@ -2,10 +2,14 @@ from tfl_project.simulation.sim_managment import LondonCreator, SimulationManage
 
 
 def main():
-    """Using rounded warehouse capacities: These were just ballpark estimates which could be refined. """
+    """
+    Using conservative warehouse capacities as suggested by the REU profiles.
+    See 'total system use' data for validation around whether this is realistic.
+    :return:
+    """
     warehouse_params = [
-        {'capacity': 300, 'docked_init': 300, 'st_id': 'WATERLOO'}
-        , {'capacity': 200, 'docked_init': 200, 'st_id': 'KINGSX'}
+        {'capacity': 520, 'docked_init': 520, 'st_id': 'WATERLOO'}
+        , {'capacity': 220, 'docked_init': 220, 'st_id': 'KINGSX'}
         , {'capacity': 150, 'docked_init': 0, 'st_id': 'HOLBORN'}
     ]
 

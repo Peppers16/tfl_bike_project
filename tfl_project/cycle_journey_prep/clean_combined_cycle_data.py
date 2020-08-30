@@ -109,6 +109,8 @@ def correct_suspect_enddates(df, tolerance=60):
     midnight.
     This function updates End Date to be start date + duration, if end_date - start_date is more than 'tolerance'
     seconds out from the stated duration
+    Update: I later found that this issue was caused by Pandas inferring the date-time format of the CSVs inconsistently,
+    so this fix is now redundant as the source error has been fixed.
     """
     duration_from_dates = (df['End Date'] - df['Start Date']) / np.timedelta64(1, 's')
     diff = duration_from_dates - df['Duration']

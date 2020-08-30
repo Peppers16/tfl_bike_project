@@ -186,12 +186,12 @@ class WarehousedStation(Station):
 
     def give_bike(self):
         """The WarehousedStation will try to avoid being empty if possible"""
-        if self._docked == 1:
+        if self._docked == 1 or self.is_empty():
             self.try_bike_from_warehouse()
         super().give_bike()
 
     def take_bike(self):
         """The WarehousedStation will try to avoid being full if possible"""
-        if self._docked == (self._capacity - 1):
+        if self._docked == (self._capacity - 1) or self.is_full():
             self.try_bike_to_warehouse()
         super().take_bike()
