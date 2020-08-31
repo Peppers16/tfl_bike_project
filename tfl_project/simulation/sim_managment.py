@@ -197,6 +197,9 @@ class LondonCreator:
         return d
 
     def cache_station_params(self, station_id, dictionary, cache_loc):
+        if not cache_loc.exists():
+            print(f"adding new cache directory: {str(cache_loc)}")
+            cache_loc.mkdir(parents=True)
         json_file = str(station_id) + '.json'
         self.check_prepare_cache(cache_loc)
         # cast keys to vanilla python integer type, as opposed to numpy.int64
@@ -281,8 +284,13 @@ class LondonCreator:
     def pickle_city(self, out_dir='simulation/files/pickled_cities/london/'):
         """Pickles the city to the specified directory, and also saved a parameter json for future
         compatibility checks"""
-        city_loc = Path(out_dir) / 'london.pickle'
-        json_loc = Path(out_dir) / 'last_used_params.json'
+        out_dir = Path(out_dir)
+        city_loc = out_dir / 'london.pickle'
+        json_loc = out_dir / 'last_used_params.json'
+
+        if not out_dir.exists():
+            print(f"adding new pickle directory: {str(out_dir)}")
+            out_dir.mkdir(parents=True)
 
         with open(city_loc, 'wb') as f:
             pickle.dump(self.london, f)

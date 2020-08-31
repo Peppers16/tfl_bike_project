@@ -331,7 +331,7 @@ class TestLondonCreator:
             prepop_londoncreator.populate_station_duration_params(path)
         d = prepop_londoncreator.london.get_station(393)._duration_dict
         assert 14 in d
-        assert d[14] == (9.16312280185123, 1.632012029995245)
+        assert d[14] == (9.229804969550127, 1.6579796941089833)
 
     def test_warehouse_lc_creation(self):
 
