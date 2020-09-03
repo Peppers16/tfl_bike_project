@@ -1,4 +1,5 @@
 from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager
+from tfl_project.simulation.sim_scripts.describe_city import describe_city
 
 
 def main():
@@ -33,6 +34,7 @@ def main():
             , warehouse_param_list=warehouse_params
             , warehoused_stations=warehoused_stations) \
         .get_or_create_london(pickle_loc='simulation/files/pickled_cities/london_big_warehouses')
+    describe_city(base_london)
     sm = SimulationManager(city=base_london, n_simulations=20, simulation_id='SIM_BIG_WAREHOUSE_5AM_NO_REBAL')
     sm.run_simulations()
     sm.output_dfs_to_csv()

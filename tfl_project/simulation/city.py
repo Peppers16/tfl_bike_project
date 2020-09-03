@@ -162,6 +162,14 @@ class City:
     def get_events_df(self):
         return DataFrame.from_dict(self._event_log['events'])
 
+    @property
+    def stations(self):
+        return self._stations
+
+    @property
+    def warehouses(self):
+        return self._warehouses
+
 
 class Agent:
     def __init__(self, city: City, destination: Station, duration: int, start_st):
