@@ -1,29 +1,53 @@
+from pathlib import Path
+from pandas import read_csv
+
 from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager
 from tfl_project.simulation.city import City
 from tfl_project.simulation.station import WarehousedStation
-from pathlib import Path
-from pandas import read_csv
-from tfl_project.simulation.sim_scripts.describe_city import describe_city
+from tfl_project.simulation.scenario_scripts.describe_city import describe_city
 
 ideals_loc = Path('data/analytical_outputs/reu/bikepoint_reu_inferences.csv')
 
 
-def modify_city_from_csv(city: City, csv_loc: Path, station_col: str, cap_col: str, bike_col: str):
-    """This function reads a CSV of preferred capacities and bike allocations and modifies stations in the city to
-    have those allocations.
-    - Will only increase capacity: does not reduce capacity.
+def apply_policy_type_c(city: City, csv_loc: Path, station_col: str, cap_col: str, bike_col: str):
+    """
+    This script re-creates the allocations suggested by the REU profiles, but assumes we must make-do with existing
+    capacity.
     - Skips WarehousedStations: their capacity is already catered-for by the warehouse!
+    + If real life has more capacity than needed: allocate any spare bikes in proportion to spare capacity.
+    ++ If real life has LESS capacity than needed: allocate bikes and docks in the same proportion to what the REU
+        profile suggested, to the available capacity.
 
     This implementation violates encapsulation and would ideally be a class method: refactor if time permits."""
     df = read_csv(csv_loc, usecols=[station_col, cap_col, bike_col])
+    bike_budget = sum([s._docked for s in city.stations.values()])
+    for st in city.stations.values():
+        st.spare_capacity = 0
+
     for _, ideal in df.iterrows():
         assert ideal[cap_col] >= ideal[bike_col]
         st = city.get_station(ideal[station_col])
+
         if isinstance(st, WarehousedStation):  # do not modify capacity for warehoused stations: overstated
             continue
-        if ideal[cap_col] > st._capacity:
-            st._capacity = ideal[cap_col]
-        st._docked = ideal[bike_col]
+
+        if ideal[cap_col] >= st._capacity:
+            desired_bike_ratio = ideal[bike_col] / ideal[cap_col]
+            new_bikes = round(st._capacity*desired_bike_ratio)
+        else:
+            # If the station has 'spare capacity' over what the REU profile suggested, note this spare capacity
+            st.spare_capacity = st._capacity - ideal[cap_col]
+            new_bikes = ideal[bike_col]
+
+        st._docked = new_bikes
+        bike_budget -= new_bikes
+        assert st._capacity >= st._docked
+
+    # Pass again and allocate spare bike budget to stations in proportion to their spare capacity.
+    total_spare_docks = sum(s.spare_capacity for s in city.stations.values())
+    for st in city.stations.values():
+        spare_bike_share = st.spare_capacity / total_spare_docks
+        st._docked += round(bike_budget * spare_bike_share)
         assert st._capacity >= st._docked
 
 
@@ -61,11 +85,11 @@ def main():
         .get_or_create_london(pickle_loc='simulation/files/pickled_cities/london_big_warehouses')
 
     # Amend station capacities to the (counter-factual) ideals dervied in Demand Profiles MSP-6
-    modify_city_from_csv(base_london, ideals_loc, 'station', 'conservative capacity needed', 'conservative bikes needed')
+    apply_policy_type_c(base_london, ideals_loc, 'station', 'conservative capacity needed', 'conservative bikes needed')
 
     describe_city(base_london)
 
-    sm = SimulationManager(city=base_london, n_simulations=20, simulation_id='SIM_WH_CONSERV_ALLOC')
+    sm = SimulationManager(city=base_london, n_simulations=20, simulation_id='SIM3_SQUEEZED_TYPE_C_ALLOC')
     sm.run_simulations()
     sm.output_dfs_to_csv()
 
