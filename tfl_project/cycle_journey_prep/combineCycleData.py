@@ -7,19 +7,20 @@ import os
 from pandas import read_csv, concat, DataFrame, Int64Dtype
 from numpy import nan, object, datetime64
 import csv as csv
+from pathlib import Path
 
 # Note the pyarrow dependency seems to need to be installed by pip, not conda
 
-page_file = 'cycling.data.tfl.gov.uk.html'
+page_file = Path('cycle_journey_prep/cycling.data.tfl.gov.uk.html')
 regex = "^https://cycling.data.tfl.gov.uk/usage-stats/.*Journey.*Data.*.csv"
-output_directory = r"../data/cycle_journeys/"
+output_directory = Path("data/cycle_journeys/")
 seconds_per_call = 60/300
 expected_n_cols = 9
 
 
 def download_csvs_matching_regex(page_file, regex, output_directory, seconds_per_call):
     # Extract soup from the html page you saved previously
-    with codecs.open(page_file) as html:
+    with codecs.open(str(page_file)) as html:
         soup = BeautifulSoup(html, features="html.parser")
 
     # List of the urls themselves, matching the regex parameter
@@ -30,17 +31,17 @@ def download_csvs_matching_regex(page_file, regex, output_directory, seconds_per
     # request then save each CSV file
     for url in all_urls:
         output_name = url[url.find('usage-stats/') + 12:]  # takes the csv portion of the url
-        if os.path.isfile(output_directory + output_name):
-            print("Note: skipped existing file " + output_directory + output_name)
+        if os.path.isfile(output_directory / output_name):
+            print("Note: skipped existing file " + str(output_directory) + output_name)
         else:
             # download each CSV, but ensuring no more than 300 hits per minute
             starttime = time.time()
             print('requesting', url)
             file = requests.get(url)
             # Write to CSV
-            with open(output_directory + output_name, 'w+', newline='') as output:
+            with open(output_directory / output_name, 'w+', newline='') as output:
                 output.write(file.text)
-            print('written to', output_directory + output_name)
+            print('written to', str(output_directory / output_name))
             # Wait if necessary
             time_taken = time.time() - starttime
             if time_taken < seconds_per_call:
@@ -51,7 +52,7 @@ def download_csvs_matching_regex(page_file, regex, output_directory, seconds_per
 
 # These are all functions used in the read_csvs_generator
 def get_csv_headers(in_directory, csv_name):
-    with open(in_directory + csv_name, 'r', newline='') as csv_file:
+    with open(in_directory / csv_name, 'r', newline='') as csv_file:
         reader = csv.reader(csv_file, delimiter=',', quotechar='"')
         line = reader.__next__()
         return line
@@ -90,7 +91,7 @@ def read_csvs_generator(in_directory, expected):
                 time_report(start_time, i, file_sizes)
             use_cols = determine_columns(in_directory, file, expected)
             print(str(i+1)+'/'+str(len(file_list)), file)
-            yield file, read_csv(in_directory + file
+            yield file, read_csv(in_directory / file
                                  , usecols=use_cols
                                  , dayfirst=True
                                  # , infer_datetime_format=True, parse_dates=[3, 6], cache_dates=True
@@ -99,7 +100,7 @@ def read_csvs_generator(in_directory, expected):
 
 def scan_files(in_directory):
     file_list = [f for f in os.listdir(in_directory) if f.endswith('.csv')]
-    file_sizes = [os.stat(in_directory+f).st_size for f in file_list]
+    file_sizes = [os.stat(in_directory / f).st_size for f in file_list]
     return file_list, file_sizes
 
 
@@ -151,7 +152,7 @@ def combine_csvs(in_directory, file_out, expected_n_cols, compression='gzip', dr
     """Reads csvs in the directory and combines them into one file using pandas. Appends to the file, so does not
     take place entirely in memory.
     If drop_st_names=True then returns all key-value-pairs identified. Otherwise returns None"""
-    if os.path.exists(in_directory+file_out):
+    if os.path.exists(in_directory / file_out):
         raise FileExistsError(f'The output file: {file_out} already exists')
     keyvaluepairs = set()
     header = True  # first pass only
@@ -165,7 +166,7 @@ def combine_csvs(in_directory, file_out, expected_n_cols, compression='gzip', dr
                 problem_csvs.append((csvname, df))
                 continue
         # append resulting df to the output csv
-        df.to_csv(in_directory + file_out, mode='a', header=header, compression=compression)
+        df.to_csv(in_directory / file_out, mode='a', header=header, compression=compression)
         header = False  # after first iteration exclude headers
     # make a final pass for the problem CSVs to see if they can be fixed
     if len(problem_csvs) > 0:
@@ -177,7 +178,7 @@ def combine_csvs(in_directory, file_out, expected_n_cols, compression='gzip', dr
 
 
 if __name__ == '__main__':
-    in_directory = r"../data/cycle_journeys/"
+    in_directory = Path("data/cycle_journeys")
     file_out = 'JourneysDataCombined.csv'
     stations_out = 'Station Lookup.csv'
 

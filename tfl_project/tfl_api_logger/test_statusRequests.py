@@ -1,5 +1,5 @@
-from statusRequest import *
-from logging_functions import *
+from tfl_project.tfl_api_logger.statusRequest import *
+from tfl_project.tfl_api_logger.logging_functions import *
 
 
 def test_read_api_credentials():

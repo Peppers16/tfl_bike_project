@@ -1,7 +1,7 @@
 import json
 import os
-from bikeStationStatus import *
-from logging_functions import *
+from tfl_project.tfl_api_logger.bikeStationStatus import *
+from tfl_project.tfl_api_logger.logging_functions import *
 import datetime
 
 

@@ -1,10 +1,5 @@
 apiCredentials.txt
-tfl_project/data/Bikepoints
-tfl_project/data/cycle_journeys
-tfl_project/data/TFL_Status
-tfl_project/data/tfl_lookups
 tfl_project/data/bike_db.db
-tfl_project/data/analytical_outputs
 googleCredentials.json
 token.pickle
 workspace.xml
@@ -14,9 +9,7 @@ cycle_journeys - Shortcut
 .pytest_cache
 .ipynb_checkpoints/
 cycling.data.tfl.gov.uk_files/
-tfl_project/simulation/tests/files/test_london.pickle
 desktop.ini
-/tfl_project/simulation/tests/files/last_used_params.json
-/tfl_project/simulation/tests/files/london.pickle
-london.pickle
+tfl_project/simulation/tests/files/last_used_params.json
 mapboxtoken.txt
+/tfl_project/simulation/tests/files/london.pickle
