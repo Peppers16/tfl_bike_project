@@ -29,9 +29,11 @@ Unfortunately, you'll need to ask me for a copy of the station data for this to 
  There is also a _Notebooks_ directory for exploration and analysis.  
  
 ## Getting Started
-### Working directory
-Most of the code (with the exception of notebooks) is expected to be run with **tfl_project** as the interpreter active directory: please make 
+### Working directory (important)
+Most of the code (with the exception of notebooks) is expected to be run with **tfl_project** as the interpreter working directory: please make 
 sure your interpreter has the current working directory set to *\<directory root\>*/tfl_project accordingly or you may encounter issues with relative references.
+
+``cd tfl_project``
 
 ### Conda environment
 Use Conda to create a virtual environment with the libraries that were used in development. If you are using windows you 
@@ -55,8 +57,11 @@ will not be available without it, although you are welcome to ask me for a copy 
 
 ### Demo simulation
 You can run, for example: 
-`python simulation/scenario_scripts/sim1_warehouses_bigger_5am.py` to perform simulations and get resulting 
+```python -m simulation.scenario_scripts.sim1_warehouses_bigger_5am``` 
+to perform simulations and get resulting 
 output files.
+
+It's necessary to run it as a module, as above.
 
 This is possible because I committed the contents of _tfl_project/simulation/files/pickled_cities/london_warehouses_ to 
 version control... the equivalent of "here's one I made earlier"
@@ -65,8 +70,8 @@ Some scripts such as _sim0_base_5am_no_rebal.py_ won't work out of the box unles
 accordingly: the pre-prepared cities are large files so weren't all put in version control.
 
 ### API requests
-With a little work you will be able to run, if you wish: ```python tfl_api_logger/bikeStationStatus.py``` to see the 
-result of a single request and log.
+With a little work you will be able to run, if you wish: ```python -m tfl_api_logger.bikeStationStatus``` to see the 
+result of a single request and log. Run it as a module, as above.
 
 In reality this was actually run by a chron job as scheduled, see _tfl_project/tfl_api_logger/README_api_log.md_
 for more details.
