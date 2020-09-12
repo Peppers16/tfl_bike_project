@@ -33,6 +33,7 @@ if __name__ == '__main__':
     credentials = read_api_credentials(credentials_file)
     timestamp = datetime.datetime.now()
     data = request_station_status(credentials)
+    print('data retrieved from API. Logging to CSV:')
     create_csv_if_needed(csv_file)
     for station in data:
         row = extract_station_data(station, timestamp)

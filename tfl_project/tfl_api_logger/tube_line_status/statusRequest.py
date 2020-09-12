@@ -12,7 +12,7 @@ import os.path
 import datetime
 import time
 from pathlib import Path
-import tfl_project.tfl_api_logger.googleSheetsAccess as googleSheetsAccess
+import tfl_project.tfl_api_logger.tube_line_status.googleSheetsAccess as googleSheetsAccess
 from tfl_project.tfl_api_logger.logging_functions import *
 
 credentials_file = str(Path('tfl_api_logger/apiCredentials.txt'))

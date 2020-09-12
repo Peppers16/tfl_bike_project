@@ -1,9 +1,9 @@
-from tfl_project.tfl_api_logger.statusRequest import *
+from tfl_project.tfl_api_logger.tube_line_status.statusRequest import *
 from tfl_project.tfl_api_logger.logging_functions import *
 
 
 def test_read_api_credentials():
-    credentials = read_api_credentials('apiCredentials.txt')
+    credentials = read_api_credentials('../apiCredentials.txt')
     assert credentials['app_id'] != ''
     assert credentials['app_key'] != ''
 

@@ -42,7 +42,7 @@ can exactly recreate my environment using:
 Alternatively a cross-platform file can be used: ```conda env create -f environment.yml```
 
 ### Fetching Journey Data
-This is very slow (10GB+), but you can try running ```python cycle_journey_prep/combineCycleData.py``` if you want to try 
+This is very slow (~5GB), but you can try running ```python cycle_journey_prep/combineCycleData.py``` if you want to try 
 pulling and aggregating the (post-2014) journey data from TfL!
 
 After that you'd run ```python cycle_journey_prep/clean_combined_cycle_data.py``` to clean it, but again this is a very slow 
