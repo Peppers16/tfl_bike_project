@@ -2,7 +2,7 @@ from tfl_project.cycle_journey_prep.clean_combined_cycle_data import authority_s
 import pandas as pd
 from pathlib import Path
 
-output_csv = Path('data/cycle_journeys/JourneysDataCombined_CLEANSED.csv')
+output_csv = Path('tfl_project/data/cycle_journeys/JourneysDataCombined_CLEANSED.csv')
 
 
 class TestCleanStations:

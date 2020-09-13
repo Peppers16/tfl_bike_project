@@ -4,8 +4,8 @@ import sqlite3
 from pathlib import Path
 
 # PWD for this script will be set to data/
-station_csv = Path('data/Bikepoints/bikepoint_statuses.csv')
-database = Path('data/bike_db.db')
+station_csv = Path('tfl_project/data/Bikepoints/bikepoint_statuses.csv')
+database = Path('tfl_project/data/bike_db.db')
 table = 'station_fill'
 
 

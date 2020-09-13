@@ -7,8 +7,8 @@ import numpy as np
 from tfl_project.database_creation.station_data_to_sql import table_exists
 
 # This script should no longer be run interactively. It is meant to be called by tfl_project.create_sqlite_database.py
-clean_journeys = Path('data/cycle_journeys/JourneysDataCombined_CLEANSED.csv')
-database = Path('data/bike_db.db')
+clean_journeys = Path('tfl_project/data/cycle_journeys/JourneysDataCombined_CLEANSED.csv')
+database = Path('tfl_project/data/bike_db.db')
 
 
 def main():

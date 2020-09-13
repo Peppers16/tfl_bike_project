@@ -39,7 +39,7 @@ class LondonCreator:
             self.additional_filters = additional_sql_filters + """ AND "Start Date" <= '2020-03-15'"""
 
     def select_query_db(self, query):
-        dbpath = "data/bike_db.db"
+        dbpath = "tfl_project/data/bike_db.db"
         db = sqlite3.connect(dbpath)
         c = db.cursor()
         c.execute(query)
@@ -48,7 +48,7 @@ class LondonCreator:
         return rows
 
     def df_from_sql(self, query):
-        dbpath = "data/bike_db.db"
+        dbpath = "tfl_project/data/bike_db.db"
         db = sqlite3.connect(dbpath)
         try:
             df = read_sql(query, db)
@@ -253,7 +253,7 @@ class LondonCreator:
         print(f"\tfitted {len(journey_df)} journeys in {(time.time()-start_time)/60} minutes")
         return d
 
-    def populate_station_duration_params(self, cache_loc=Path('simulation/files/caches/duration_params')):
+    def populate_station_duration_params(self, cache_loc=Path('tfl_project/simulation/files/caches/duration_params')):
         """This is the most intensive parametrization, taking about 2 hours.
         Therefore, this method uses a 'cache' in addition to the existing .pickle_city functionality.
         This means we can create new LondonCreator instances (e.g. after updating source code) more flexibly without
@@ -281,7 +281,7 @@ class LondonCreator:
         print("Done!")
         print(".london attribute has been populated using fresh SQL pulls")
 
-    def pickle_city(self, out_dir='simulation/files/pickled_cities/london/'):
+    def pickle_city(self, out_dir='tfl_project/simulation/files/pickled_cities/london/'):
         """Pickles the city to the specified directory, and also saved a parameter json for future
         compatibility checks"""
         out_dir = Path(out_dir)
@@ -297,7 +297,7 @@ class LondonCreator:
         self.dump_parameter_json(json_loc)
         print(f'City saved as {city_loc} for future use. Use load_pickled_city to use it again')
 
-    def load_pickled_city(self, in_dir='simulation/files/pickled_cities/london/'):
+    def load_pickled_city(self, in_dir='tfl_project/simulation/files/pickled_cities/london/'):
         city_loc = Path(in_dir) / 'london.pickle'
         json_loc = Path(in_dir) / 'last_used_params.json'
 
@@ -310,7 +310,7 @@ class LondonCreator:
         if not self.london._stations:
             print("Warning. No stations in loaded city")
 
-    def get_or_create_london(self, pickle_loc='simulation/files/pickled_cities/london'):
+    def get_or_create_london(self, pickle_loc='tfl_project/simulation/files/pickled_cities/london'):
         try:
             self.load_pickled_city(in_dir=pickle_loc)
         except FileNotFoundError:
@@ -324,7 +324,7 @@ class LondonCreator:
             raise
         return self.london
 
-    def dump_parameter_json(self, out_f='simulation/files/last_used_params.json'):
+    def dump_parameter_json(self, out_f='tfl_project/simulation/files/last_used_params.json'):
         """This saves the current LondonCreator parameters to a JSON so that cached simulation parameters can be
         checked for 'compatibility' with future LondonCreator instances"""
         d = vars(self).copy()  # careful not to delete the actual london attribute from self!
@@ -401,7 +401,7 @@ class SimulationManager:
         return combined_df
 
     def output_df_to_csv(self, df, descriptor=''):
-        output_dir = Path('data/simulation_outputs/') / self.simulation_id
+        output_dir = Path('tfl_project/data/simulation_outputs/') / self.simulation_id
         if not output_dir.exists():
             output_dir.mkdir()
         output_file = output_dir / (descriptor + '.csv')

@@ -15,7 +15,7 @@ from pathlib import Path
 import tfl_project.tfl_api_logger.tube_line_status.googleSheetsAccess as googleSheetsAccess
 from tfl_project.tfl_api_logger.logging_functions import *
 
-credentials_file = str(Path('tfl_api_logger/apiCredentials.txt'))
+credentials_file = str(Path('tfl_project/tfl_api_logger/apiCredentials.txt'))
 google_spreadsheet_id = '1j2uY1NJwuTdeCQ2OoFzNDcfTXM7s3OkLvjKa6Wy9PlU'  # Here's one I made earlier
 csv_file = '/mnt/ntfsHDD/tfl_logging/TFL_Status_Log.csv'  # Directory for the Raspberry Pi
 

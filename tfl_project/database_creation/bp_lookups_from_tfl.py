@@ -4,8 +4,8 @@ from pathlib import Path
 from tfl_project.tfl_api_logger.bikeStationStatus import request_station_status
 from tfl_project.tfl_api_logger.logging_functions import read_api_credentials
 
-credentials_file = Path('tfl_api_logger/apiCredentials.txt')
-out_dir = Path('data/tfl_lookups')
+credentials_file = Path('tfl_project/tfl_api_logger/apiCredentials.txt')
+out_dir = Path('tfl_project/data/tfl_lookups')
 
 
 def create_tfl_station_lookups(credentials_file=credentials_file):

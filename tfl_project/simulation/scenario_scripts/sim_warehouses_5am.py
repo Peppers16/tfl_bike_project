@@ -28,7 +28,7 @@ def main():
             , exclude_covid=True
             , warehouse_param_list=warehouse_params
             , warehoused_stations=warehoused_stations) \
-        .get_or_create_london(pickle_loc='simulation/files/pickled_cities/london_warehouses')
+        .get_or_create_london(pickle_loc='tfl_project/simulation/files/pickled_cities/london_warehouses')
     describe_city(base_london)
     sm = SimulationManager(city=base_london, n_simulations=20, simulation_id='SIM_WAREHOUSE_5AM_NO_REBAL')
     sm.run_simulations()

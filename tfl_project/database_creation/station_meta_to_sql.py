@@ -13,10 +13,10 @@ from pathlib import Path
 
 import tfl_project.tfl_api_logger.bikeStationStatus as bikeStationStatus
 
-dbpath = Path("data/bike_db.db")
+dbpath = Path("tfl_project/data/bike_db.db")
 table_out = 'station_metadata'
-cn_pickle_dir = Path('data/tfl_lookups/bikepointid_to_commonname.p')
-ll_pickle_dir = Path('data/tfl_lookups/bikepointid_to_latlongs.p')
+cn_pickle_dir = Path('tfl_project/data/tfl_lookups/bikepointid_to_commonname.p')
+ll_pickle_dir = Path('tfl_project/data/tfl_lookups/bikepointid_to_latlongs.p')
 
 
 def main():
@@ -93,7 +93,7 @@ def main():
     # I'll start by re-using some functions from my existing module which is used for logging station data
 
     bike_json = bikeStationStatus.request_station_status(
-        credentials=bikeStationStatus.read_api_credentials('tfl_api_logger/apiCredentials.txt')
+        credentials=bikeStationStatus.read_api_credentials('tfl_project/tfl_api_logger/apiCredentials.txt')
     )
 
     # Impute missing values with API data

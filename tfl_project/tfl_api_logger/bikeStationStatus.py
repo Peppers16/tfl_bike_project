@@ -3,7 +3,7 @@ import requests
 import datetime
 from pathlib import Path
 
-credentials_file = str(Path('tfl_api_logger/apiCredentials.txt'))
+credentials_file = str(Path('tfl_project/tfl_api_logger/apiCredentials.txt'))
 csv_file = '/mnt/ntfsHDD/tfl_logging/bikepoint_statuses.csv'
 
 def extract_station_data(station_data, timestamp):

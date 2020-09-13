@@ -26,14 +26,22 @@ a proper database schema. The key output is: `tfl_project/data/bike_db.db`.
 Unfortunately, you'll need to ask me for a copy of the station data for this to work.
 * _simulation_: All modules and scripts related to running simulations of the BSS. 
 
- There is also a _Notebooks_ directory for exploration and analysis.  
+There is also a _Notebooks_ directory for exploration and analysis.  
  
 ## Getting Started
-### Working directory (important)
-Most of the code (with the exception of notebooks) is expected to be run with **tfl_project** as the interpreter working directory: please make 
-sure your interpreter has the current working directory set to *\<directory root\>*/tfl_project accordingly or you may encounter issues with relative references.
+### Working directory
+Project code is intended to be run from the **repository root**. 
 
-``cd tfl_project``
+Make sure your IDE, interpreter or terminal are set to use the respository root as the working directory (including when running scripts)
+, or you may encounter issues with relative references and imports.  
+##### A note on running scripts directly from the terminal:
+There are a handful of scripts which, if run directly from the terminal or cmd, may result in 'module not found' errors. 
+The reason for this is because running something like ```python foo/bar/some_script.py``` in the terminal does not 
+automatically mean that the terminal working directory is added to the Python interpreter's path, so imports beginning 
+with `foo.` can fail.
+
+The solution to this is: either use an IDE which automatically appends the CWD to the python `sys.path`, or run the script 
+as a module. The examples below assume that you are running them in the CMD, so you shouldn't have any problems.  
 
 ### Conda environment
 Use Conda to create a virtual environment with the libraries that were used in development. If you are using windows you 
@@ -44,11 +52,17 @@ can exactly recreate my environment using:
 Alternatively a cross-platform file can be used: ```conda env create -f environment.yml```
 
 ### Fetching Journey Data
-This is very slow (~5GB), but you can try running ```python cycle_journey_prep/combineCycleData.py``` if you want to try 
-pulling and aggregating the (post-2014) journey data from TfL!
+This is very slow (~5GB), but you can try running: 
 
-After that you'd run ```python cycle_journey_prep/clean_combined_cycle_data.py``` to clean it, but again this is a very slow 
-step.
+```python tfl_project/cycle_journey_prep/combineCycleData.py``` 
+
+if you want to try pulling and aggregating the (post-2014) journey data from TfL!
+
+After that you'd run: 
+
+```python tfl_project/cycle_journey_prep/clean_combined_cycle_data.py``` 
+
+to clean it, but again this is a very slow step.
 
 See _tfl_project/cycle_journey_prep/README_cyclejourneys.md_ for more info.
 ### A note on station data and database creation
@@ -57,11 +71,10 @@ will not be available without it, although you are welcome to ask me for a copy 
 
 ### Demo simulation
 You can run, for example: 
-```python -m simulation.scenario_scripts.sim1_warehouses_bigger_5am``` 
-to perform simulations and get resulting 
-output files.
+```python -m tfl_project.simulation.scenario_scripts.sim1_warehouses_bigger_5am``` 
+to perform simulations and get resulting output files.
 
-It's necessary to run it as a module, as above.
+If you're using the terminal or cmd, it's necessary to run it as a module, as above.
 
 This is possible because I committed the contents of _tfl_project/simulation/files/pickled_cities/london_warehouses_ to 
 version control... the equivalent of "here's one I made earlier"
@@ -70,7 +83,7 @@ Some scripts such as _sim0_base_5am_no_rebal.py_ won't work out of the box unles
 accordingly: the pre-prepared cities are large files so weren't all put in version control.
 
 ### API requests
-With a little work you will be able to run, if you wish: ```python -m tfl_api_logger.bikeStationStatus``` to see the 
+With a little work you will be able to run, if you wish: ```python -m tfl_project.tfl_api_logger.bikeStationStatus``` to see the 
 result of a single request and log. Run it as a module, as above.
 
 In reality this was actually run by a cron job as scheduled, see _tfl_project/tfl_api_logger/README_api_log.md_

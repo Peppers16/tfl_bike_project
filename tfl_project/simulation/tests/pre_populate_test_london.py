@@ -15,8 +15,8 @@ def main():
             lc.london._stations.pop(i)
     lc.populate_station_demand_dicts()
     lc.populate_station_destination_dicts()
-    lc.populate_station_duration_params(Path('simulation/tests/files/caches/duration_params'))
-    lc.pickle_city('simulation/tests/files/')
+    lc.populate_station_duration_params(Path('tfl_project/simulation/tests/files/caches/duration_params'))
+    lc.pickle_city('tfl_project/simulation/tests/files/')
 
 
 if __name__ == "__main__":

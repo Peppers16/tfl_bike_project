@@ -11,7 +11,7 @@ from tfl_project.simulation.station import Store, Station, WarehousedStation, Bi
 from tfl_project.simulation.sim_managment import LondonCreator, SimulationManager, IncompatibleParamsError
 
 # A small version of London is pre-populated for some testing
-test_london_location = 'simulation/tests/files/'
+test_london_location = 'tfl_project/simulation/tests/files/'
 city_loc = Path(test_london_location) / 'london.pickle'
 if city_loc.exists():
     remove(city_loc)
@@ -312,7 +312,7 @@ class TestLondonCreator:
         assert new_dest != st_14
 
     def test_parameter_json(self, prepop_londoncreator):
-        f_location = 'simulation/tests/files/last_used_params.json'
+        f_location = 'tfl_project/simulation/tests/files/last_used_params.json'
         assert os.path.exists(f_location)
         assert prepop_londoncreator.parameter_json_is_compatible(f_location)
         prepop_londoncreator.min_year = 2016
@@ -323,7 +323,7 @@ class TestLondonCreator:
             prepop_londoncreator.get_or_create_london(test_london_location)
 
     def test_duration_cache(self, prepop_londoncreator):
-        path = Path('simulation/tests/files/caches/duration_params')
+        path = Path('tfl_project/simulation/tests/files/caches/duration_params')
         assert (path / '393.json').exists()
         assert prepop_londoncreator.parameter_json_is_compatible(path / 'last_used_params.json')
         prepop_londoncreator.min_year = 2016
@@ -378,7 +378,7 @@ class TestSimulationManager:
         )
         sm.run_simulations()
         sm.output_df_to_csv(sm.combined_timeseries_df, 'timeseries')
-        test_dir = 'data/simulation_outputs/TESTSIM'
+        test_dir = 'tfl_project/data/simulation_outputs/TESTSIM'
         assert os.path.exists(test_dir + '/timeseries.csv')
         os.remove(test_dir + '/timeseries.csv')
         sm.output_df_to_csv(sm.combined_event_df, 'events')

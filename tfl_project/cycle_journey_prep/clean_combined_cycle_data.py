@@ -9,10 +9,10 @@ import sqlite3
 
 from pathlib import Path
 
-input_csv = Path('data/cycle_journeys/JourneysDataCombined.csv')
-output_csv = Path('data/cycle_journeys/JourneysDataCombined_CLEANSED.csv')
-tn_pickle_dir = Path('data/tfl_lookups/bikepointid_to_terminal_name.p')
-dbpath = Path('data/bike_db.db')
+input_csv = Path('tfl_project/data/cycle_journeys/JourneysDataCombined.csv')
+output_csv = Path('tfl_project/data/cycle_journeys/JourneysDataCombined_CLEANSED.csv')
+tn_pickle_dir = Path('tfl_project/data/tfl_lookups/bikepointid_to_terminal_name.p')
+dbpath = Path('tfl_project/data/bike_db.db')
 
 
 def authority_station_list():

@@ -6,9 +6,9 @@ from tfl_project.tfl_api_logger.bikeStationStatus import *
 from tfl_project.tfl_api_logger.logging_functions import *
 
 
-test_json_file = str(Path('tfl_api_logger/tests/json_test.json'))
-test_output_csv = str(Path('tfl_api_logger/tests/test_output_csv.csv'))
-credentials_file = str(Path('tfl_api_logger/apiCredentials.txt'))
+test_json_file = str(Path('tfl_project/tfl_api_logger/tests/json_test.json'))
+test_output_csv = str(Path('tfl_project/tfl_api_logger/tests/test_output_csv.csv'))
+credentials_file = str(Path('tfl_project/tfl_api_logger/apiCredentials.txt'))
 
 # cleanup
 if Path(test_output_csv).exists():

@@ -3,7 +3,7 @@ from pandas import DataFrame
 from numpy import nan, isnan, any
 from pathlib import Path
 
-in_directory = Path('data/cycle_journeys')
+in_directory = Path('tfl_project/data/cycle_journeys')
 
 
 def test_pop_station():

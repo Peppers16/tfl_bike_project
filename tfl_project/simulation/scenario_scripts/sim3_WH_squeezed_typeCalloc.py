@@ -6,7 +6,7 @@ from tfl_project.simulation.city import City
 from tfl_project.simulation.station import WarehousedStation
 from tfl_project.simulation.scenario_scripts.describe_city import describe_city
 
-ideals_loc = Path('data/analytical_outputs/reu/bikepoint_reu_inferences.csv')
+ideals_loc = Path('tfl_project/data/analytical_outputs/reu/bikepoint_reu_inferences.csv')
 
 
 def apply_policy_type_c(city: City, csv_loc: Path, station_col: str, cap_col: str, bike_col: str):
@@ -82,7 +82,7 @@ def main():
             , exclude_covid=True
             , warehouse_param_list=warehouse_params
             , warehoused_stations=warehoused_stations) \
-        .get_or_create_london(pickle_loc='simulation/files/pickled_cities/london_big_warehouses')
+        .get_or_create_london(pickle_loc='tfl_project/simulation/files/pickled_cities/london_big_warehouses')
 
     # Amend station capacities to the (counter-factual) ideals dervied in Demand Profiles MSP-6
     apply_policy_type_c(base_london, ideals_loc, 'station', 'conservative capacity needed', 'conservative bikes needed')

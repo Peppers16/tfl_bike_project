@@ -11,9 +11,9 @@ from pathlib import Path
 
 # Note the pyarrow dependency seems to need to be installed by pip, not conda
 
-page_file = Path('cycle_journey_prep/cycling.data.tfl.gov.uk.html')
+page_file = Path('tfl_project/cycle_journey_prep/cycling.data.tfl.gov.uk.html')
 regex = "^https://cycling.data.tfl.gov.uk/usage-stats/.*Journey.*Data.*.csv"
-output_directory = Path("data/cycle_journeys/")
+output_directory = Path("tfl_project/data/cycle_journeys/")
 seconds_per_call = 60/300
 expected_n_cols = 9
 
@@ -178,7 +178,7 @@ def combine_csvs(in_directory, file_out, expected_n_cols, compression='gzip', dr
 
 
 if __name__ == '__main__':
-    in_directory = Path("data/cycle_journeys")
+    in_directory = Path("tfl_project/data/cycle_journeys")
     file_out = 'JourneysDataCombined.csv'
     stations_out = 'Station Lookup.csv'
 
