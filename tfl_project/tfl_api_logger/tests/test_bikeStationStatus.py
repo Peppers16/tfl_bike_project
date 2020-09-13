@@ -1,12 +1,19 @@
 import json
 import os
+import datetime
+from pathlib import Path
 from tfl_project.tfl_api_logger.bikeStationStatus import *
 from tfl_project.tfl_api_logger.logging_functions import *
-import datetime
 
 
-test_json_file = 'json_test.json'
-test_output_csv = 'test_output_csv.csv'
+test_json_file = str(Path('tfl_api_logger/tests/json_test.json'))
+test_output_csv = str(Path('tfl_api_logger/tests/test_output_csv.csv'))
+credentials_file = str(Path('tfl_api_logger/apiCredentials.txt'))
+
+# cleanup
+if Path(test_output_csv).exists():
+    Path(test_output_csv).unlink()
+
 
 with open(test_json_file) as json_file:
     data = json.load(json_file)
@@ -26,4 +33,4 @@ def test_extract_station_data():
 
 
 def test_get_station_status():
-    json = request_station_status()
+    json = request_station_status(credentials_file)

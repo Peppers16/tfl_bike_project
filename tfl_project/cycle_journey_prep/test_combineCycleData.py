@@ -1,8 +1,10 @@
 from tfl_project.cycle_journey_prep.combineCycleData import *
 from pandas import DataFrame
 from numpy import nan, isnan, any
+from pathlib import Path
 
-in_directory = r"../data/cycle_journeys/"
+in_directory = Path('data/cycle_journeys')
+
 
 def test_pop_station():
     test_df = DataFrame({'foo': [1, 2, 3, 2, 1], 'bar': ['one', 'two', 'three', 'two', 'one']})

@@ -73,7 +73,7 @@ accordingly: the pre-prepared cities are large files so weren't all put in versi
 With a little work you will be able to run, if you wish: ```python -m tfl_api_logger.bikeStationStatus``` to see the 
 result of a single request and log. Run it as a module, as above.
 
-In reality this was actually run by a chron job as scheduled, see _tfl_project/tfl_api_logger/README_api_log.md_
+In reality this was actually run by a cron job as scheduled, see _tfl_project/tfl_api_logger/README_api_log.md_
 for more details.
 
 Two prerequisite actions are:
