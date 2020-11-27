@@ -3,11 +3,12 @@
 Welcome to my MSc project!
 
 ## If you are here for a showcase of my work
-* For **Data Science**, visualisations and SQL, please browse the notebooks
-* For **Software Engineering** and **Object Oriented Programming** in Python, please browse `tfl_project/simulation`
-* For data logging via an API please see `tfl_project/tfl_api_logger`
-* For some basic **Data Engineering** please see `tfl_project/database_creation` 
-* For **data cleansing** please see `tfl_project/cycle_journey_prep`
+* For **Data Science**, visualisations and SQL, please browse the [notebooks](https://github.com/Peppers16/tfl_bike_project/tree/showcase/notebooks)
+* For **Software Engineering** and **Object Oriented Programming** in Python, please browse [tfl_project/simulation](https://github.com/Peppers16/tfl_bike_project/tree/showcase/tfl_project/simulation)
+* For the final written report, please see [this PDF](https://github.com/Peppers16/tfl_bike_project/blob/showcase/final_report/Josh%20Hill%20MSc%20Project%20Report.pdf)
+* For data logging via an API please see [tfl_project/tfl_api_logger](https://github.com/Peppers16/tfl_bike_project/tree/showcase/tfl_project/tfl_api_logger)
+* For some basic **Data Engineering** please see [tfl_project/database_creation](https://github.com/Peppers16/tfl_bike_project/tree/showcase/tfl_project/database_creation) 
+* For **data cleansing** please see [tfl_project/cycle_journey_prep](https://github.com/Peppers16/tfl_bike_project/tree/showcase/tfl_project/cycle_journey_prep)
 
 ## Understanding this repository
 
