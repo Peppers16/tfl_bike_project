@@ -2,6 +2,15 @@
 
 Welcome to my MSc project!
 
+## If you are here for a showcase of my work
+* For **Data Science**, visualisations and SQL, please browse the notebooks
+* For **Software Engineering** and **Object Oriented Programming** in Python, please browse `tfl_project/simulation`
+* For data logging via an API please see `tfl_project/tfl_api_logger`
+* For some basic **Data Engineering** please see `tfl_project/database_creation` 
+* For **data cleansing** please see `tfl_project/cycle_journey_prep`
+
+## Understanding this repository
+
 This readme is intended to give an orientation around the repository, but for full context it is advisable to read the 
 accompanying report.  
 
